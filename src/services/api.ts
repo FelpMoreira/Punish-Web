@@ -8,6 +8,41 @@ export const storage = {
     if (v) localStorage.setItem('token', v)
     else localStorage.removeItem('token')
   },
+  get user(): import('../types').User | null {
+    const raw = localStorage.getItem('user')
+    if (!raw) return null
+    try {
+      return JSON.parse(raw)
+    } catch {
+      return null
+    }
+  },
+  set user(v: import('../types').User | null) {
+    if (v) localStorage.setItem('user', JSON.stringify(v))
+    else localStorage.removeItem('user')
+  },
+}
+
+function decodeToken(token: string): { sub: string; role?: string } | null {
+  try {
+    const payload = token.split('.')[1]
+    if (!payload) return null
+    const normalized = payload.replace(/-/g, '+').replace(/_/g, '/')
+    const json = atob(normalized)
+    return JSON.parse(json)
+  } catch {
+    return null
+  }
+}
+
+async function loadCurrentUser(): Promise<import('../types').User> {
+  const token = storage.token
+  if (!token) throw new Error('Não autenticado')
+  const claims = decodeToken(token)
+  if (!claims?.sub) throw new Error('Token inválido')
+  const user = await request<import('../types').User>(`/players/${claims.sub}`)
+  storage.user = user
+  return user
 }
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
@@ -38,12 +73,19 @@ export const api = {
       request<import('../types').AuthResponse>('/auth/login', {
         method: 'POST',
         body: JSON.stringify({ email, password }),
-      }).then((res) => {
+      }).then(async (res) => {
         storage.token = res.token
+        try {
+          storage.user = await loadCurrentUser()
+        } catch {
+          // não quebra o login se o perfil falhar
+        }
         return res
       }),
+    me: () => loadCurrentUser(),
     logout: () => {
       storage.token = null
+      storage.user = null
     },
   },
   tournaments: {
