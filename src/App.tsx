@@ -8,10 +8,11 @@ import { TournamentDetail } from './pages/TournamentDetail'
 import { Players } from './pages/Players'
 import { Create } from './pages/Create'
 import { Settings } from './pages/Settings'
+import { Profile } from './pages/Profile'
 import { Sidebar } from './components/layout/Sidebar'
 import { api, storage } from './services/api'
 
-type Page = 'home' | 'login' | 'register' | 'dashboard' | 'tournament-list' | 'tournament-detail' | 'players' | 'create' | 'settings'
+type Page = 'home' | 'login' | 'register' | 'dashboard' | 'tournament-list' | 'tournament-detail' | 'players' | 'create' | 'settings' | 'profile'
 
 function parseHash(): { page: Page; tournamentId: number | null } {
   const hash = window.location.hash.replace('#', '')
@@ -74,6 +75,7 @@ export default function App() {
         {page === 'players' && <Players />}
         {page === 'create' && <Create onNavigate={navigate} />}
         {page === 'settings' && <Settings />}
+        {page === 'profile' && <Profile onNavigate={navigate} />}
       </div>
     </div>
   )
