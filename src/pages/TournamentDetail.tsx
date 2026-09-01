@@ -1,0 +1,269 @@
+import { useState, useEffect } from 'react'
+import { api } from '../services/api'
+import { Card } from '../components/ui/Card'
+import { Badge } from '../components/ui/Badge'
+import { Button } from '../components/ui/Button'
+import { Table } from '../components/ui/Table'
+import { Topbar } from '../components/layout/Topbar'
+import type { Tournament, Player, Match, Ranking } from '../types'
+import { Trash2, GitBranch, UserPlus, Play, RefreshCw } from 'lucide-react'
+
+interface Props {
+  onNavigate: (page: string, id?: number) => void
+  tournamentId: number
+}
+
+export function TournamentDetail({ onNavigate, tournamentId }: Props) {
+  const [tournament, setTournament] = useState<Tournament | null>(null)
+  const [players, setPlayers] = useState<Player[]>([])
+  const [matches, setMatches] = useState<Match[]>([])
+  const [allPlayers, setAllPlayers] = useState<Player[]>([])
+  const [selectedToAdd, setSelectedToAdd] = useState<number[]>([])
+  const [ranking, setRanking] = useState<Ranking[]>([])
+
+  const load = () => {
+    api.tournaments.get(tournamentId).then(setTournament).catch(() => {})
+    api.tournaments.players(tournamentId).then(setPlayers).catch(() => {})
+    api.tournaments.matches(tournamentId).then(setMatches).catch(() => {})
+    api.players.list().then(setAllPlayers).catch(() => {})
+    api.tournaments.ranking(tournamentId).then(setRanking).catch(() => {})
+    setSelectedToAdd([])
+  }
+
+  useEffect(() => { load() }, [tournamentId])
+
+  const toggleAdd = (id: number) => {
+    setSelectedToAdd((prev) =>
+      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
+    )
+  }
+
+  const addSelected = () => {
+    if (!selectedToAdd.length) return
+    Promise.all(selectedToAdd.map((id) => api.tournaments.addPlayer(tournamentId, id)))
+      .then(load).catch(() => {})
+  }
+
+  const removePlayer = (playerId: number) => {
+    api.tournaments.removePlayer(tournamentId, playerId).then(load).catch(() => {})
+  }
+
+  const generate = () => {
+    api.tournaments.generate(tournamentId).then(() => {
+      load()
+    }).catch((err) => {
+      alert('Erro ao gerar bracket: ' + err.message)
+      load()
+    })
+  }
+
+  const recalculate = () => {
+    api.tournaments.recalculate(tournamentId).then(() => {
+      return api.tournaments.generate(tournamentId)
+    }).then(() => {
+      load()
+    }).catch((err) => {
+      alert('Erro ao recalcular bracket: ' + err.message)
+      load()
+    })
+  }
+
+  const startMatch = (matchId: number) => {
+    api.matches.start(matchId).then(load).catch(() => {})
+  }
+
+  const startRound = (round: number) => {
+    api.matches.startRound(tournamentId, round).then(load).catch(() => {})
+  }
+
+  const firstReadyRound = matches
+    .filter((m) => m.status === 'READY' && m.fk_player1_id && m.fk_player2_id && !m.fk_winner_id)
+    .sort((a, b) => a.round_number - b.round_number)[0]?.round_number
+
+  const submitResult = (matchId: number, winnerId: number) => {
+    api.matches.result(matchId, { fk_winner_id: winnerId, score_player1: 0, score_player2: 0 }).then(load).catch(() => {})
+  }
+
+  const statusLabel = (m: Match) => {
+    if (m.fk_winner_id) return <Badge variant="finished">Done</Badge>
+    if (m.status === 'IN_PROGRESS') return <Badge variant="live">In Progress</Badge>
+    if (m.fk_player1_id && m.fk_player2_id) return <Badge variant="waiting">Ready</Badge>
+    if (m.fk_player1_id || m.fk_player2_id) return <Badge variant="waiting">Waiting</Badge>
+    return <Badge variant="next">—</Badge>
+  }
+
+  const placementLabel = (p: number) => {
+    if (p === 1) return '1st'
+    if (p === 2) return '2nd'
+    if (p === 3) return '3rd'
+    return `${p}th`
+  }
+
+  const renderActions = (m: Match) => {
+    if (m.fk_player1_id && m.fk_player2_id && !m.fk_winner_id) {
+      if (m.status === 'IN_PROGRESS') {
+        return (
+          <div className="flex gap-1">
+            <Button size="sm" variant="ghost" onClick={() => submitResult(m.id, m.fk_player1_id!)}>
+              P1
+            </Button>
+            <Button size="sm" variant="ghost" onClick={() => submitResult(m.id, m.fk_player2_id!)}>
+              P2
+            </Button>
+          </div>
+        )
+      }
+      return <Button size="sm" variant="ghost" onClick={() => startMatch(m.id)}>Start</Button>
+    }
+    if (m.fk_winner_id) {
+      return (
+        <span className="text-xs text-green font-medium">
+          Winner: {players.find(p => p.id === m.fk_winner_id)?.nickname || `#${m.fk_winner_id}`}
+        </span>
+      )
+    }
+    return null
+  }
+
+  return (
+    <>
+      <Topbar
+        breadcrumb={[
+          { label: 'My Tournaments', page: 'tournament-list' },
+          { label: tournament?.name || `#${tournamentId}` },
+        ]}
+        actions={
+          <>
+            {tournament?.status === 'CREATED' && (
+              <Button size="sm" icon={GitBranch} onClick={generate}>
+                Generate bracket
+              </Button>
+            )}
+            {tournament?.status !== 'CREATED' && tournament?.status !== 'FINISHED' && (
+              <Button size="sm" variant="ghost" icon={RefreshCw} onClick={recalculate}>
+                Recalculate
+              </Button>
+            )}
+            <Button size="sm" variant="ghost" onClick={() => onNavigate('tournament-list')}>
+              ← Back
+            </Button>
+          </>
+        }
+      />
+      <div className="flex-1 overflow-y-auto p-5">
+        <div className="grid grid-cols-[1fr_300px] gap-4 items-start">
+          <div className="flex flex-col gap-4">
+            <Card
+              title={`Matches (${matches.length})`}
+              action={
+                firstReadyRound !== undefined && tournament?.status !== 'FINISHED' ? (
+                  <Button size="sm" icon={Play} onClick={() => startRound(firstReadyRound)}>
+                    Start Round {firstReadyRound}
+                  </Button>
+                ) : undefined
+              }
+            >
+              {matches.length > 0 ? (
+                <div className="-mx-4 -mb-3">
+                  <Table
+                    columns={[
+                      { key: 'round', header: 'Round', render: (m: Match) => <span className="text-xs">R{m.round_number}</span> },
+                      { key: 'p1', header: 'Player 1', render: (m: Match) => m.fk_player1_id ? players.find(p => p.id === m.fk_player1_id)?.nickname || `#${m.fk_player1_id}` : <span className="text-muted italic text-xs">TBD</span> },
+                      { key: 'vs', header: '', render: () => <span className="text-soft text-xs">vs</span> },
+                      { key: 'p2', header: 'Player 2', render: (m: Match) => m.fk_player2_id ? players.find(p => p.id === m.fk_player2_id)?.nickname || `#${m.fk_player2_id}` : <span className="text-muted italic text-xs">TBD</span> },
+                      { key: 'status', header: '', render: (m: Match) => statusLabel(m) },
+                      { key: 'actions', header: '', render: renderActions },
+                    ]}
+                    data={matches.sort((a, b) => a.round_number - b.round_number || a.id - b.id)}
+                  />
+                </div>
+              ) : (
+                <div className="text-sm text-muted text-center py-6">
+                  {tournament?.status === 'CREATED' ? 'Generate a bracket to see matches.' : 'No matches yet.'}
+                </div>
+              )}
+            </Card>
+          </div>
+
+          <div className="flex flex-col gap-4">
+            <Card title={`Players (${players.length})`}>
+              <div className="flex flex-col gap-1 -mx-4 -mt-3">
+                {players.map((p) => (
+                  <div key={p.id} className="flex items-center justify-between px-4 py-1.5 border-b border-border last:border-b-0">
+                    <span className="text-sm">{p.nickname}</span>
+                    <button onClick={() => removePlayer(p.id)} className="text-muted hover:text-red cursor-pointer p-0.5">
+                      <Trash2 size={13} />
+                    </button>
+                  </div>
+                ))}
+                {players.length === 0 && (
+                  <div className="text-sm text-muted text-center py-4">No players added yet.</div>
+                )}
+              </div>
+              {tournament?.status !== 'FINISHED' && (
+                <div className="mt-2 pt-3 border-t border-border">
+                  <div className="text-[11px] uppercase tracking-wider text-soft font-semibold mb-2">
+                    Add players
+                  </div>
+                  <div className="flex flex-col gap-0.5 max-h-[180px] overflow-y-auto -mx-4 px-4">
+                    {allPlayers
+                      .filter((p) => !players.find((tp) => tp.id === p.id))
+                      .map((p) => (
+                        <label
+                          key={p.id}
+                          className="flex items-center gap-2 px-1 py-1 rounded-sm hover:bg-bg-hover cursor-pointer text-sm"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={selectedToAdd.includes(p.id)}
+                            onChange={() => toggleAdd(p.id)}
+                            className="accent-purple"
+                          />
+                          {p.nickname}
+                        </label>
+                      ))}
+                    {allPlayers.filter((p) => !players.find((tp) => tp.id === p.id)).length === 0 && (
+                      <div className="text-xs text-muted py-2">All players are already in this tournament.</div>
+                    )}
+                  </div>
+                  {selectedToAdd.length > 0 && (
+                    <Button size="sm" icon={UserPlus} onClick={addSelected} className="mt-2 w-full justify-center">
+                      Add selected ({selectedToAdd.length})
+                    </Button>
+                  )}
+                </div>
+              )}
+            </Card>
+
+            {tournament?.fk_winner_id && (
+              <Card title="Champion">
+                <div className="flex items-center gap-2">
+                  <Badge variant="finished">🏆</Badge>
+                  <span className="text-sm font-semibold">
+                    {players.find(p => p.id === tournament.fk_winner_id)?.nickname || `#${tournament.fk_winner_id}`}
+                  </span>
+                </div>
+              </Card>
+            )}
+
+            {ranking.length > 0 && (
+              <Card title="Ranking">
+                <div className="flex flex-col gap-1 -mx-4 -mt-3">
+                  {ranking.map((r) => (
+                    <div key={r.player_id} className="flex items-center justify-between px-4 py-1.5 border-b border-border last:border-b-0">
+                      <span className="text-xs font-medium text-muted w-8">{placementLabel(r.placement)}</span>
+                      <span className="text-sm flex-1">{r.nickname}</span>
+                      {r.placement <= 3 && (
+                        <span className="text-xs">{r.placement === 1 ? '🥇' : r.placement === 2 ? '🥈' : '🥉'}</span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </Card>
+            )}
+          </div>
+        </div>
+      </div>
+    </>
+  )
+}
