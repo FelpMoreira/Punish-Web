@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
-import { Trophy, Plus, ChevronRight } from 'lucide-react'
-import { api } from '../services/api'
+import { Trophy, Plus, ChevronRight, LogIn, LogOut, User as UserIcon } from 'lucide-react'
+import { api, storage } from '../services/api'
 import { Badge } from '../components/ui/Badge'
 import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
@@ -26,6 +26,8 @@ export function Home({ onNavigate }: Props) {
   const [game, setGame] = useState('')
   const [playerCounts, setPlayerCounts] = useState<Record<number, number>>({})
   const [matchCounts, setMatchCounts] = useState<Record<number, number>>({})
+  const loggedUser = storage.user
+  const [logged, setLogged] = useState(() => !!storage.token && !!storage.user)
 
   const load = () => {
     api.tournaments.list().then(async (list) => {
@@ -71,9 +73,41 @@ export function Home({ onNavigate }: Props) {
             <div className="w-7 h-7 bg-purple rounded-sm flex items-center justify-center text-[11px] font-bold text-white">PT</div>
             <span className="text-sm font-semibold tracking-wider uppercase">Punish</span>
           </div>
-          <Button size="sm" icon={Plus} onClick={() => hasTournaments ? onNavigate('create') : create()}>
-            Criar torneio
-          </Button>
+          <div className="flex items-center gap-2">
+            {logged ? (
+              <>
+                <button
+                  onClick={() => onNavigate('profile')}
+                  className="flex items-center gap-2 bg-bg-el border border-border rounded-md px-2.5 py-1.5 text-xs text-muted hover:border-purple/30 hover:text-text transition-colors cursor-pointer"
+                >
+                  <span className="w-5 h-5 rounded-sm bg-purple/20 text-purple flex items-center justify-center">
+                    <UserIcon size={12} />
+                  </span>
+                  {loggedUser?.nickname}
+                </button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  icon={LogOut}
+                  onClick={() => { api.auth.logout(); setLogged(false) }}
+                >
+                  Sair
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button size="sm" variant="secondary" icon={LogIn} onClick={() => onNavigate('login')}>
+                  Entrar
+                </Button>
+                <Button size="sm" variant="secondary" onClick={() => onNavigate('register')}>
+                  Registrar
+                </Button>
+              </>
+            )}
+            <Button size="sm" icon={Plus} onClick={() => hasTournaments ? onNavigate('create') : create()}>
+              Criar torneio
+            </Button>
+          </div>
         </div>
 
         {!hasTournaments && (
