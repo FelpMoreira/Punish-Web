@@ -1,4 +1,4 @@
-import { LayoutDashboard, Trophy, Users, PlusCircle, Settings2, LogOut } from 'lucide-react'
+import { LayoutDashboard, Trophy, Users, PlusCircle, Settings2, LogOut, UserRound } from 'lucide-react'
 
 interface Props {
   active: string
@@ -10,6 +10,7 @@ const links = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { id: 'tournament-list', label: 'My Tournaments', icon: Trophy },
   { id: 'players', label: 'Players', icon: Users },
+  { id: 'profile', label: 'Profile', icon: UserRound },
   { id: 'create', label: 'Create', icon: PlusCircle },
   { id: 'settings', label: 'Settings', icon: Settings2 },
 ]
