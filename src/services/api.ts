@@ -140,6 +140,8 @@ export const api = {
       request<import('../types').TournamentInvite[]>(`/tournaments/${tournamentId}/invite`),
     joinInvite: (codigo: string) =>
       request<void>(`/invites/${codigo}/join`, { method: 'POST' }),
+    getInvite: (codigo: string) =>
+      request<import('../types').InviteInfo>(`/invites/${codigo}`),
   },
   players: {
     list: (nickname?: string) => {
