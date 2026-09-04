@@ -69,6 +69,7 @@ export interface PlayerStats {
 
 export interface AuthResponse {
   token: string
+  refreshToken: string
   email: string
 }
 
