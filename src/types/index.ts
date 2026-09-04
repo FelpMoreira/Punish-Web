@@ -7,6 +7,16 @@ export interface Tournament {
   criado_em: string
 }
 
+export interface TournamentInvite {
+  id: number
+  fk_tournament_id: number
+  codigo: string
+  criado_em: string
+  expira_em: string | null
+  usos_max: number
+  usos: number
+}
+
 export interface Player {
   id: number
   nickname: string
