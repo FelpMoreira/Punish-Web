@@ -8,6 +8,13 @@ export const storage = {
     if (v) localStorage.setItem('token', v)
     else localStorage.removeItem('token')
   },
+  get refreshToken() {
+    return localStorage.getItem('refreshToken')
+  },
+  set refreshToken(v: string | null) {
+    if (v) localStorage.setItem('refreshToken', v)
+    else localStorage.removeItem('refreshToken')
+  },
   get user(): import('../types').User | null {
     const raw = localStorage.getItem('user')
     if (!raw) return null
@@ -45,7 +52,39 @@ async function loadCurrentUser(): Promise<import('../types').User> {
   return user
 }
 
-async function request<T>(path: string, options?: RequestInit): Promise<T> {
+let refreshing: Promise<string | null> | null = null
+
+async function refreshToken(): Promise<string | null> {
+  const refreshToken = storage.refreshToken
+  if (!refreshToken) return null
+  if (refreshing) return refreshing
+  refreshing = (async () => {
+    try {
+      const res = await fetch(`${API_BASE}/auth/refresh`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refreshToken }),
+      })
+      if (!res.ok) {
+        storage.token = null
+        storage.refreshToken = null
+        storage.user = null
+        return null
+      }
+      const data = await res.json()
+      storage.token = data.token
+      storage.refreshToken = data.refreshToken
+      return data.token
+    } catch {
+      return null
+    } finally {
+      refreshing = null
+    }
+  })()
+  return refreshing
+}
+
+async function request<T>(path: string, options?: RequestInit, isRetry = false): Promise<T> {
   const headers: Record<string, string> = { 'Content-Type': 'application/json' }
   const token = storage.token
   if (token) headers['Authorization'] = `Bearer ${token}`
@@ -55,6 +94,10 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
     ...options,
   })
   if (!res.ok) {
+    if (res.status === 401 && token && !isRetry) {
+      const newToken = await refreshToken()
+      if (newToken) return request<T>(path, options, true)
+    }
     const text = await res.text()
     throw new Error(text || `HTTP ${res.status}`)
   }
@@ -75,6 +118,7 @@ export const api = {
         body: JSON.stringify({ email, password }),
       }).then(async (res) => {
         storage.token = res.token
+        storage.refreshToken = res.refreshToken
         try {
           storage.user = await loadCurrentUser()
         } catch {
@@ -82,10 +126,24 @@ export const api = {
         }
         return res
       }),
+    refresh: () => refreshToken(),
     me: () => loadCurrentUser(),
-    logout: () => {
-      storage.token = null
-      storage.user = null
+    logout: async () => {
+      const refreshToken = storage.refreshToken
+      try {
+        if (refreshToken) {
+          await request<void>('/auth/logout', {
+            method: 'POST',
+            body: JSON.stringify({ refreshToken }),
+          })
+        }
+      } catch {
+        // ignora falha no logout remoto
+      } finally {
+        storage.token = null
+        storage.refreshToken = null
+        storage.user = null
+      }
     },
   },
   tournaments: {
