@@ -131,6 +131,15 @@ export const api = {
       request<import('../types').Ranking[]>(`/tournaments/${id}/ranking`),
     recalculate: (id: number) =>
       request<void>(`/tournaments/${id}/recalculate`, { method: 'POST' }),
+    invite: (tournamentId: number, expiraEm?: string, usosMax?: number) =>
+      request<import('../types').TournamentInvite>(`/tournaments/${tournamentId}/invite`, {
+        method: 'POST',
+        body: JSON.stringify({ expiraEm, usosMax }),
+      }),
+    listInvites: (tournamentId: number) =>
+      request<import('../types').TournamentInvite[]>(`/tournaments/${tournamentId}/invite`),
+    joinInvite: (codigo: string) =>
+      request<void>(`/invites/${codigo}/join`, { method: 'POST' }),
   },
   players: {
     list: (nickname?: string) => {
