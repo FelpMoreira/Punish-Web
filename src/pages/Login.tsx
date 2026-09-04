@@ -22,7 +22,7 @@ export function Login({ onNavigate }: Props) {
       await api.auth.login(email.trim(), password)
       onNavigate('dashboard')
     } catch (err: any) {
-      setError(err?.message?.replace(/^.*?"error "/, '').replace(/".*$/, '') || 'Falha no login')
+      setError(err?.message?.replace(/^.*?"error"/, '').replace(/".*$/, '') || 'Falha no login')
     } finally {
       setLoading(false)
     }

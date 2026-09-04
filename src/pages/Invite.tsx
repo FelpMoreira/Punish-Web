@@ -18,7 +18,7 @@ export function Invite({ onNavigate, codigo }: Props) {
       .getInvite(codigo)
       .then(setInviteInfo)
       .catch((err: any) =>
-        setError(err?.message?.replace(/^.*?"error "/, '').replace(/".*$/, '') || 'Convite não encontrado')
+        setError(err?.message?.replace(/^.*?"error"/, '').replace(/".*$/, '') || 'Convite não encontrado')
       )
   }, [codigo])
 
@@ -30,7 +30,7 @@ export function Invite({ onNavigate, codigo }: Props) {
       alert('Você entrou no torneio!')
       onNavigate('tournament-detail', inviteInfo?.tournamentId)
     } catch (err: any) {
-      setError(err?.message?.replace(/^.*?"error "/, '').replace(/".*$/, '') || 'Não foi possível entrar no torneio')
+      setError(err?.message?.replace(/^.*?"error"/, '').replace(/".*$/, '') || 'Não foi possível entrar no torneio')
     } finally {
       setLoading(false)
     }

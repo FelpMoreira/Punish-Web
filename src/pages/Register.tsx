@@ -25,7 +25,7 @@ export function Register({ onNavigate }: Props) {
       await api.auth.register(nickname.trim(), email.trim(), password)
       setSuccess('Conta criada! Faça login para continuar.')
     } catch (err: any) {
-      setError(err?.message?.replace(/^.*?"error "/, '').replace(/".*$/, '') || 'Falha no cadastro')
+      setError(err?.message?.replace(/^.*?"error"/, '').replace(/".*$/, '') || 'Falha no cadastro')
     } finally {
       setLoading(false)
     }
