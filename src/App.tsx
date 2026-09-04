@@ -9,42 +9,50 @@ import { Players } from './pages/Players'
 import { Create } from './pages/Create'
 import { Settings } from './pages/Settings'
 import { Profile } from './pages/Profile'
+import { Invite } from './pages/Invite'
 import { Sidebar } from './components/layout/Sidebar'
 import { api, storage } from './services/api'
 
-type Page = 'home' | 'login' | 'register' | 'dashboard' | 'tournament-list' | 'tournament-detail' | 'players' | 'create' | 'settings' | 'profile'
+type Page = 'home' | 'login' | 'register' | 'dashboard' | 'tournament-list' | 'tournament-detail' | 'players' | 'create' | 'settings' | 'profile' | 'invite'
 
-function parseHash(): { page: Page; tournamentId: number | null } {
+function parseHash(): { page: Page; tournamentId: number | null; codigo: string | null } {
   const hash = window.location.hash.replace('#', '')
   const parts = hash.split('/').filter(Boolean)
-  if (parts.length === 0) return { page: 'home', tournamentId: null }
+  if (parts.length === 0) return { page: 'home', tournamentId: null, codigo: null }
   if (parts[0] === 'tournament-detail' && parts[1]) {
-    return { page: 'tournament-detail', tournamentId: Number(parts[1]) }
+    return { page: 'tournament-detail', tournamentId: Number(parts[1]), codigo: null }
   }
-  return { page: parts[0] as Page, tournamentId: null }
+  if (parts[0] === 'invite' && parts[1]) {
+    return { page: 'invite', tournamentId: null, codigo: parts[1] }
+  }
+  return { page: parts[0] as Page, tournamentId: null, codigo: null }
 }
 
-function buildHash(page: Page, tournamentId?: number): string {
+function buildHash(page: Page, tournamentId?: number, codigo?: string): string {
   if (page === 'tournament-detail' && tournamentId) return `#/tournament-detail/${tournamentId}`
+  if (page === 'invite' && codigo) return `#/invite/${codigo}`
   return `#/${page}`
 }
 
 export default function App() {
   const [page, setPage] = useState<Page>(() => parseHash().page)
   const [selectedTournamentId, setSelectedTournamentId] = useState<number | null>(() => parseHash().tournamentId)
+  const [inviteCode, setInviteCode] = useState<string | null>(() => parseHash().codigo)
 
-  const navigate = useCallback((p: string, tournamentId?: number) => {
+  const navigate = useCallback((p: string, tournamentId?: number, codigo?: string) => {
     const pg = p as Page
-    window.location.hash = buildHash(pg, tournamentId)
+    window.location.hash = buildHash(pg, tournamentId, codigo)
     setPage(pg)
     if (tournamentId) setSelectedTournamentId(tournamentId)
+    if (codigo) setInviteCode(codigo)
   }, [])
 
   useEffect(() => {
     const onHashChange = () => {
-      const { page: pg, tournamentId: tid } = parseHash()
+      const { page: pg, tournamentId: tid, codigo } = parseHash()
       setPage(pg)
       if (tid) setSelectedTournamentId(tid)
+      if (codigo) setInviteCode(codigo)
     }
     window.addEventListener('hashchange', onHashChange)
     return () => window.removeEventListener('hashchange', onHashChange)
@@ -53,6 +61,7 @@ export default function App() {
   if (page === 'home') return <Home onNavigate={navigate} />
   if (page === 'login') return <Login onNavigate={navigate} />
   if (page === 'register') return <Register onNavigate={navigate} />
+  if (page === 'invite') return <Invite onNavigate={navigate} codigo={inviteCode!} />
 
   if (!storage.token) return <Login onNavigate={navigate} />
 
