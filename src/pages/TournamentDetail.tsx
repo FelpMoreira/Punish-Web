@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react'
-import { api } from '../services/api'
+import { api, storage } from '../services/api'
 import { Card } from '../components/ui/Card'
 import { Badge } from '../components/ui/Badge'
 import { Button } from '../components/ui/Button'
 import { Table } from '../components/ui/Table'
 import { Topbar } from '../components/layout/Topbar'
 import type { Tournament, Player, Match, Ranking } from '../types'
-import { Trash2, GitBranch, UserPlus, Play, RefreshCw } from 'lucide-react'
+import { X, Trash2, GitBranch, UserPlus, Play, RefreshCw } from 'lucide-react'
 
 interface Props {
   onNavigate: (page: string, id?: number) => void
@@ -20,6 +20,8 @@ export function TournamentDetail({ onNavigate, tournamentId }: Props) {
   const [allPlayers, setAllPlayers] = useState<Player[]>([])
   const [selectedToAdd, setSelectedToAdd] = useState<number[]>([])
   const [ranking, setRanking] = useState<Ranking[]>([])
+  const [showInvite, setShowInvite] = useState(false)
+  const [inviteCode, setInviteCode] = useState<string>('')
 
   const load = () => {
     api.tournaments.get(tournamentId).then(setTournament).catch(() => {})
@@ -54,6 +56,15 @@ export function TournamentDetail({ onNavigate, tournamentId }: Props) {
     }).catch((err) => {
       alert('Erro ao gerar bracket: ' + err.message)
       load()
+    })
+  }
+
+  const generateInvite = () => {
+    api.tournaments.invite(tournamentId).then((invite) => {
+      setInviteCode(invite.codigo)
+      setShowInvite(true)
+    }).catch((err) => {
+      alert('Erro ao gerar convite: ' + err.message)
     })
   }
 
@@ -144,12 +155,58 @@ export function TournamentDetail({ onNavigate, tournamentId }: Props) {
                 Recalculate
               </Button>
             )}
+            {tournament?.status === 'CREATED' && storage.user ? (
+              <div className="hidden sm:block flex items-center gap-2">
+                <Button size="sm" variant="ghost" icon={UserPlus} onClick={generateInvite}>
+                  Gerar convite
+                </Button>
+              </div>
+            ) : undefined}
             <Button size="sm" variant="ghost" onClick={() => onNavigate('tournament-list')}>
               ← Back
             </Button>
           </>
         }
       />
+      {showInvite && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-bg max-w-md w-full rounded-lg p-6 shadow-xl border-border">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold">Link de Convite</h3>
+              <button onClick={() => setShowInvite(false)} className="text-muted hover:text-red">
+                <X size={18} />
+              </button>
+            </div>
+            <div className="flex gap-2 rounded-lg p-3 border-border" style={{background: 'var(--bg-secondary)'}}>
+              <input
+                type="text"
+                value={inviteCode}
+                readOnly
+                className="flex-1 border-none focus:outline-none p-2 text-sm"
+                onCopy={({target}) => {
+                  navigator.clipboard.writeText(target.value)
+                  setShowInvite(false)
+                }}
+              />
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(inviteCode)
+                  setShowInvite(false)
+                }}
+                className="px-3 py-1.5 text-sm text-primary hover:bg-primary/10"
+              >
+                Copiar
+              </button>
+            </div>
+            <p className="text-xs text-muted mt-2">
+              Compartilhe este código com jogadores que desejam entrar no torneio.
+              <br />
+              Eles podem usar o link: <code>#/invite/{inviteCode}</code>
+            </p>
+          </div>
+        </div>
+      )}
+
       <div className="flex-1 overflow-y-auto p-5">
         <div className="grid grid-cols-[1fr_300px] gap-4 items-start">
           <div className="flex flex-col gap-4">
