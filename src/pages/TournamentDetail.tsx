@@ -3,6 +3,7 @@ import { api, storage } from '../services/api'
 import { Card } from '../components/ui/Card'
 import { Badge } from '../components/ui/Badge'
 import { Button } from '../components/ui/Button'
+import { Input } from '../components/ui/Input'
 import { Table } from '../components/ui/Table'
 import { Topbar } from '../components/layout/Topbar'
 import type { Tournament, Player, Match, Ranking } from '../types'
@@ -23,6 +24,8 @@ export function TournamentDetail({ onNavigate, tournamentId }: Props) {
   const [showInvite, setShowInvite] = useState(false)
   const [inviteCode, setInviteCode] = useState<string>('')
   const [copied, setCopied] = useState(false)
+  const [expiraEm, setExpiraEm] = useState('')
+  const [usosMax, setUsosMax] = useState('')
 
   const inviteUrl = inviteCode ? `${window.location.origin}/#/invite/${inviteCode}` : ''
 
@@ -69,13 +72,21 @@ export function TournamentDetail({ onNavigate, tournamentId }: Props) {
     })
   }
 
-  const generateInvite = () => {
-    api.tournaments.invite(tournamentId).then((invite) => {
-      setInviteCode(invite.codigo)
-      setShowInvite(true)
-    }).catch((err) => {
-      alert('Erro ao gerar convite: ' + err.message)
-    })
+  const openInviteModal = () => {
+    setInviteCode('')
+    setExpiraEm('')
+    setUsosMax('')
+    setShowInvite(true)
+  }
+
+  const submitInvite = () => {
+    api.tournaments.invite(tournamentId, expiraEm || undefined, usosMax ? Number(usosMax) : undefined)
+      .then((invite) => {
+        setInviteCode(invite.codigo)
+      })
+      .catch((err) => {
+        alert('Erro ao gerar convite: ' + err.message)
+      })
   }
 
   const recalculate = () => {
@@ -167,7 +178,7 @@ export function TournamentDetail({ onNavigate, tournamentId }: Props) {
             )}
             {tournament?.status === 'CREATED' && storage.user ? (
               <div className="hidden sm:block flex items-center gap-2">
-                <Button size="sm" variant="ghost" icon={UserPlus} onClick={generateInvite}>
+                <Button size="sm" variant="ghost" icon={UserPlus} onClick={openInviteModal}>
                   Gerar convite
                 </Button>
               </div>
@@ -215,7 +226,38 @@ export function TournamentDetail({ onNavigate, tournamentId }: Props) {
                 </div>
               </>
             ) : (
-              <div className="text-sm text-muted">Gerando convite...</div>
+              <div className="flex flex-col gap-3">
+                <div>
+                  <label className="text-[11px] uppercase tracking-wider text-soft font-semibold mb-1 block">
+                    Expira em (opcional)
+                  </label>
+                  <Input
+                    type="datetime-local"
+                    value={expiraEm}
+                    onChange={(e) => setExpiraEm(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label className="text-[11px] uppercase tracking-wider text-soft font-semibold mb-1 block">
+                    Usos máximos (opcional)
+                  </label>
+                  <Input
+                    type="number"
+                    min={1}
+                    placeholder="Sem limite"
+                    value={usosMax}
+                    onChange={(e) => setUsosMax(e.target.value)}
+                  />
+                </div>
+                <p className="text-xs text-muted">
+                  Deixe em branco para convite sem expiração e sem limite de uso.
+                </p>
+                <div className="mt-1 flex justify-end">
+                  <Button size="sm" icon={UserPlus} onClick={submitInvite}>
+                    Gerar convite
+                  </Button>
+                </div>
+              </div>
             )}
           </div>
         </div>
