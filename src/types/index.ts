@@ -17,6 +17,16 @@ export interface TournamentInvite {
   usos: number
 }
 
+export interface InviteInfo {
+  codigo: string
+  usos_max: number | null
+  usos: number
+  expira_em: string | null
+  tournamentId: number
+  tournamentName: string
+  tournamentStatus: string
+}
+
 export interface Player {
   id: number
   nickname: string
