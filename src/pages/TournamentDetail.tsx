@@ -6,10 +6,10 @@ import { Button } from '../components/ui/Button'
 import { Table } from '../components/ui/Table'
 import { Topbar } from '../components/layout/Topbar'
 import type { Tournament, Player, Match, Ranking } from '../types'
-import { X, Trash2, GitBranch, UserPlus, Play, RefreshCw } from 'lucide-react'
+import { X, Trash2, GitBranch, UserPlus, Play, RefreshCw, Copy } from 'lucide-react'
 
 interface Props {
-  onNavigate: (page: string, id?: number) => void
+  onNavigate: (page: string, id?: number | string) => void
   tournamentId: number
 }
 
@@ -22,6 +22,16 @@ export function TournamentDetail({ onNavigate, tournamentId }: Props) {
   const [ranking, setRanking] = useState<Ranking[]>([])
   const [showInvite, setShowInvite] = useState(false)
   const [inviteCode, setInviteCode] = useState<string>('')
+  const [copied, setCopied] = useState(false)
+
+  const inviteUrl = inviteCode ? `${window.location.origin}/#/invite/${inviteCode}` : ''
+
+  const copyInvite = () => {
+    if (!inviteUrl) return
+    navigator.clipboard.writeText(inviteUrl)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
 
   const load = () => {
     api.tournaments.get(tournamentId).then(setTournament).catch(() => {})
@@ -169,40 +179,44 @@ export function TournamentDetail({ onNavigate, tournamentId }: Props) {
         }
       />
       {showInvite && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-bg max-w-md w-full rounded-lg p-6 shadow-xl border-border">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setShowInvite(false)}>
+          <div className="bg-bg max-w-md w-full rounded-lg p-6 shadow-xl border-border" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold">Link de Convite</h3>
-              <button onClick={() => setShowInvite(false)} className="text-muted hover:text-red">
+              <button
+                onClick={() => setShowInvite(false)}
+                className="text-muted hover:text-red cursor-pointer p-1"
+                type="button"
+              >
                 <X size={18} />
               </button>
             </div>
-            <div className="flex gap-2 rounded-lg p-3 border-border" style={{background: 'var(--bg-secondary)'}}>
-              <input
-                type="text"
-                value={inviteCode}
-                readOnly
-                className="flex-1 border-none focus:outline-none p-2 text-sm"
-                onCopy={({target}) => {
-                  navigator.clipboard.writeText(target.value)
-                  setShowInvite(false)
-                }}
-              />
-              <button
-                onClick={() => {
-                  navigator.clipboard.writeText(inviteCode)
-                  setShowInvite(false)
-                }}
-                className="px-3 py-1.5 text-sm text-primary hover:bg-primary/10"
-              >
-                Copiar
-              </button>
-            </div>
-            <p className="text-xs text-muted mt-2">
-              Compartilhe este código com jogadores que desejam entrar no torneio.
-              <br />
-              Eles podem usar o link: <code>#/invite/{inviteCode}</code>
-            </p>
+            {inviteUrl ? (
+              <>
+                <div className="flex items-center gap-2 rounded-lg p-2 border border-border-md" style={{ background: 'var(--bg-secondary)' }}>
+                  <input
+                    type="text"
+                    value={inviteUrl}
+                    readOnly
+                    onClick={(e) => (e.target as HTMLInputElement).select()}
+                    className="flex-1 bg-transparent border-none focus:outline-none px-2 py-1.5 text-sm text-text truncate"
+                  />
+                  <Button size="sm" icon={Copy} onClick={copyInvite}>
+                    {copied ? 'Copiado!' : 'Copiar'}
+                  </Button>
+                </div>
+                <p className="text-xs text-muted mt-3">
+                  Envie este link para jogadores entrarem no torneio. O link pode ser usado enquanto o torneio estiver no status <strong>CREATED</strong>.
+                </p>
+                <div className="mt-4 flex justify-end">
+                  <Button size="sm" variant="ghost" onClick={() => onNavigate('invite', inviteCode)}>
+                    Testar abrindo o link →
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <div className="text-sm text-muted">Gerando convite...</div>
+            )}
           </div>
         </div>
       )}
