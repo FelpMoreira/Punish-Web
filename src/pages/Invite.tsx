@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '../components/ui/Button'
 import { api } from '../services/api'
+import type { InviteInfo } from '../types'
 
 interface Props {
   onNavigate: (page: string, id?: number | string) => void
@@ -8,8 +9,18 @@ interface Props {
 }
 
 export function Invite({ onNavigate, codigo }: Props) {
+  const [inviteInfo, setInviteInfo] = useState<InviteInfo | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+
+  useEffect(() => {
+    api.tournaments
+      .getInvite(codigo)
+      .then(setInviteInfo)
+      .catch((err: any) =>
+        setError(err?.message?.replace(/^.*?"error "/, '').replace(/".*$/, '') || 'Convite não encontrado')
+      )
+  }, [codigo])
 
   const join = async () => {
     setLoading(true)
@@ -17,7 +28,7 @@ export function Invite({ onNavigate, codigo }: Props) {
     try {
       await api.tournaments.joinInvite(codigo)
       alert('Você entrou no torneio!')
-      onNavigate('tournament-list')
+      onNavigate('tournament-detail', inviteInfo?.tournamentId)
     } catch (err: any) {
       setError(err?.message?.replace(/^.*?"error "/, '').replace(/".*$/, '') || 'Não foi possível entrar no torneio')
     } finally {
@@ -34,13 +45,27 @@ export function Invite({ onNavigate, codigo }: Props) {
         </div>
         <div className="bg-bg-el border border-border rounded-md p-5 text-center">
           <div className="text-sm font-semibold mb-2">Convite de torneio</div>
-          <p className="text-xs text-muted mb-5">
-            Você foi convidado para entrar em um torneio. Toque em entrar para se juntar.
-          </p>
+          {inviteInfo ? (
+            <p className="text-xs text-muted mb-1">
+              Você foi convidado para entrar no torneio
+            </p>
+          ) : (
+            <p className="text-xs text-muted mb-5">
+              Você foi convidado para entrar em um torneio.
+            </p>
+          )}
+          {inviteInfo && (
+            <div className="mb-5">
+              <div className="text-lg font-semibold text-text">{inviteInfo.tournamentName}</div>
+              <div className="text-xs text-muted mt-1 capitalize">Status: {inviteInfo.tournamentStatus.toLowerCase()}</div>
+            </div>
+          )}
           {error && <div className="text-xs text-red-500 mb-3">{error}</div>}
-          <Button onClick={join} disabled={loading} style={{ width: '100%', justifyContent: 'center' }}>
-            {loading ? 'Entrando...' : 'Entrar no torneio'}
-          </Button>
+          {!error && (
+            <Button onClick={join} disabled={loading} style={{ width: '100%', justifyContent: 'center' }}>
+              {loading ? 'Entrando...' : 'Entrar no torneio'}
+            </Button>
+          )}
           <button
             onClick={() => onNavigate('dashboard')}
             className="mt-4 text-xs text-muted hover:text-text cursor-pointer"
