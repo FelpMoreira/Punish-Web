@@ -6,7 +6,7 @@ import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
 import { Table } from '../components/ui/Table'
 import { Topbar } from '../components/layout/Topbar'
-import type { Tournament, Player, Match, Ranking, TournamentInviteDetail } from '../types'
+import type { Tournament, Player, Match, Ranking, TournamentInviteDetail, TournamentRequest } from '../types'
 import { X, Trash2, GitBranch, UserPlus, Play, RefreshCw, Copy } from 'lucide-react'
 
 interface Props {
@@ -28,6 +28,8 @@ export function TournamentDetail({ onNavigate, tournamentId }: Props) {
   const [usosMax, setUsosMax] = useState('')
   const [invites, setInvites] = useState<TournamentInviteDetail[]>([])
   const [copiedInviteId, setCopiedInviteId] = useState<number | null>(null)
+  const [requests, setRequests] = useState<TournamentRequest[]>([])
+  const [solicitado, setSolicitado] = useState(false)
 
   const inviteUrl = inviteCode ? `${window.location.origin}/#/invite/${inviteCode}` : ''
 
@@ -53,6 +55,25 @@ export function TournamentDetail({ onNavigate, tournamentId }: Props) {
     return isNaN(d.getTime()) ? iso : d.toLocaleString('pt-BR')
   }
 
+  const solicitar = () => {
+    api.tournaments.solicitarPedido(tournamentId)
+      .then(() => {
+        setSolicitado(true)
+      })
+      .catch((err) => {
+        setSolicitado(true)
+        if (!/já enviado/.test(err?.message || '')) alert('Erro ao solicitar entrada: ' + err.message)
+      })
+  }
+
+  const aceitar = (playerId: number) => {
+    api.tournaments.aceitarPedido(tournamentId, playerId).then(load).catch(() => {})
+  }
+
+  const rejeitar = (playerId: number) => {
+    api.tournaments.rejeitarPedido(tournamentId, playerId).then(load).catch(() => {})
+  }
+
   const load = () => {
     api.tournaments.get(tournamentId).then(setTournament).catch(() => {})
     api.tournaments.players(tournamentId).then(setPlayers).catch(() => {})
@@ -60,6 +81,7 @@ export function TournamentDetail({ onNavigate, tournamentId }: Props) {
     api.players.list().then(setAllPlayers).catch(() => {})
     api.tournaments.ranking(tournamentId).then(setRanking).catch(() => {})
     api.tournaments.listInvites(tournamentId).then(setInvites).catch(() => {})
+    api.tournaments.listarPedidos(tournamentId).then(setRequests).catch(() => {})
     setSelectedToAdd([])
   }
 
@@ -365,6 +387,42 @@ export function TournamentDetail({ onNavigate, tournamentId }: Props) {
                 </div>
               )}
             </Card>
+
+            {tournament && storage.user && tournament.fk_owner !== storage.user.id && tournament.status === 'CREATED' && (
+              <Card title="Inscrição">
+                {players.some((p) => p.id === storage.user!.id) ? (
+                  <div className="text-sm text-muted text-center py-1">Você já está neste torneio.</div>
+                ) : solicitado ? (
+                  <div className="text-sm text-muted text-center py-1">Pedido enviado! Aguardando aprovação.</div>
+                ) : (
+                  <Button size="sm" icon={UserPlus} onClick={solicitar} className="w-full justify-center">
+                    Pedir pra entrar
+                  </Button>
+                )}
+              </Card>
+            )}
+
+            {tournament && storage.user && tournament.fk_owner === storage.user.id && requests.length > 0 && (
+              <Card title={`Pedidos de entrada (${requests.length})`}>
+                <div className="flex flex-col gap-1 -mx-4 -mt-3">
+                  {requests.map((req) => (
+                    <div key={req.id} className="flex items-center justify-between px-4 py-1.5 border-b border-border last:border-b-0">
+                      <span className="text-sm">
+                        {allPlayers.find((p) => p.id === req.fk_player_id)?.nickname || `#${req.fk_player_id}`}
+                      </span>
+                      <div className="flex gap-1">
+                        <Button size="sm" variant="secondary" onClick={() => aceitar(req.fk_player_id)}>
+                          Aceitar
+                        </Button>
+                        <Button size="sm" variant="danger" onClick={() => rejeitar(req.fk_player_id)}>
+                          Rejeitar
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </Card>
+            )}
 
             {tournament && storage.user && tournament.fk_owner === storage.user.id && (
               <Card title={`Convites (${invites.length})`}>
