@@ -1,4 +1,4 @@
-const API_BASE = 'http://localhost:7000'
+const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:7000'
 
 export const storage = {
   get token() {
