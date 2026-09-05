@@ -1,4 +1,5 @@
-import { LayoutDashboard, Trophy, PlusCircle, Users, UserRound, LogOut } from 'lucide-react'
+import { LayoutDashboard, Trophy, PlusCircle, Users, UserRound, LogOut, ShieldCheck } from 'lucide-react'
+import { storage } from '../../services/api'
 
 interface Props {
   active: string
@@ -6,15 +7,16 @@ interface Props {
   onLogout?: () => void
 }
 
-const links = [
-  { id: 'dashboard', label: 'Início', icon: LayoutDashboard },
-  { id: 'tournament-list', label: 'Torneios', icon: Trophy },
-  { id: 'create', label: 'Criar', icon: PlusCircle },
-  { id: 'players', label: 'Jogadores', icon: Users },
-  { id: 'profile', label: 'Perfil', icon: UserRound },
-]
-
 export function MobileNav({ active, onNavigate, onLogout }: Props) {
+  const isAdmin = storage.user?.role === 'ADMIN'
+  const links = [
+    { id: 'dashboard', label: 'Início', icon: LayoutDashboard },
+    { id: 'tournament-list', label: 'Torneios', icon: Trophy },
+    { id: 'create', label: 'Criar', icon: PlusCircle },
+    { id: 'players', label: 'Jogadores', icon: Users },
+    { id: 'profile', label: 'Perfil', icon: UserRound },
+    ...(isAdmin ? [{ id: 'admin', label: 'Admin', icon: ShieldCheck }] : []),
+  ]
   return (
     <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-bg-el border-t border-border">
       <div className="flex items-stretch">

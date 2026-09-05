@@ -1,4 +1,5 @@
-import { LayoutDashboard, Trophy, Users, PlusCircle, Settings2, LogOut, UserRound } from 'lucide-react'
+import { LayoutDashboard, Trophy, Users, PlusCircle, Settings2, LogOut, UserRound, ShieldCheck } from 'lucide-react'
+import { storage } from '../../services/api'
 
 interface Props {
   active: string
@@ -6,16 +7,17 @@ interface Props {
   onLogout?: () => void
 }
 
-const links = [
-  { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { id: 'tournament-list', label: 'My Tournaments', icon: Trophy },
-  { id: 'players', label: 'Players', icon: Users },
-  { id: 'profile', label: 'Profile', icon: UserRound },
-  { id: 'create', label: 'Create', icon: PlusCircle },
-  { id: 'settings', label: 'Settings', icon: Settings2 },
-]
-
 export function Sidebar({ active, onNavigate, onLogout }: Props) {
+  const isAdmin = storage.user?.role === 'ADMIN'
+  const links = [
+    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { id: 'tournament-list', label: 'My Tournaments', icon: Trophy },
+    { id: 'players', label: 'Players', icon: Users },
+    { id: 'profile', label: 'Profile', icon: UserRound },
+    { id: 'create', label: 'Create', icon: PlusCircle },
+    { id: 'settings', label: 'Settings', icon: Settings2 },
+    ...(isAdmin ? [{ id: 'admin', label: 'Admin', icon: ShieldCheck }] : []),
+  ]
   return (
     <aside className="hidden md:flex w-[220px] flex-shrink-0 bg-bg-el border-r border-border flex-col overflow-hidden">
       <div className="flex items-center gap-2.5 px-4 py-4 border-b border-border">

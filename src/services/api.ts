@@ -232,6 +232,14 @@ export const api = {
     delete: (id: number) =>
       request<void>(`/players/${id}`, { method: 'DELETE' }),
   },
+  admin: {
+    listPlayers: () => request<import('../types').User[]>('/admin/players'),
+    setRole: (id: number, role: string) =>
+      request<void>(`/admin/players/${id}/role`, {
+        method: 'PUT',
+        body: JSON.stringify({ role }),
+      }),
+  },
   dashboard: () => request<{ totalPlayers: number; matchesPlayed: number; upcomingMatches: number }>('/dashboard'),
 
   matches: {

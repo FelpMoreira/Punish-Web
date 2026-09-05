@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { api } from '../services/api'
+import { api, storage } from '../services/api'
 import { Card } from '../components/ui/Card'
 import { Button } from '../components/ui/Button'
 import { Table } from '../components/ui/Table'
@@ -16,6 +16,9 @@ export function Players() {
   const [editValue, setEditValue] = useState('')
   const [statsId, setStatsId] = useState<number | null>(null)
   const [stats, setStats] = useState<PlayerStats | null>(null)
+
+  const role = storage.user?.role
+  const isManager = role === 'ADMIN' || role === 'ORGANIZER'
 
   const load = () => api.players.list(search || undefined).then(setPlayers).catch(() => {})
   useEffect(() => { load() }, [search])
@@ -48,15 +51,17 @@ export function Players() {
             />
           </div>
           <Card title={`All Players (${players.length})`}>
-            <div className="flex gap-2 mb-3">
-              <Input
-                placeholder="New player nickname..."
-                value={newNick}
-                onChange={(e) => setNewNick(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && create()}
-              />
-              <Button size="sm" icon={Plus} onClick={create}>Add</Button>
-            </div>
+            {isManager && (
+              <div className="flex gap-2 mb-3">
+                <Input
+                  placeholder="New player nickname..."
+                  value={newNick}
+                  onChange={(e) => setNewNick(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && create()}
+                />
+                <Button size="sm" icon={Plus} onClick={create}>Add</Button>
+              </div>
+            )}
             <div className="-mx-4 -mb-3">
               <Table
                 columns={[
@@ -78,15 +83,21 @@ export function Players() {
                   { key: 'actions', header: '', render: (p: Player) => (
                     <div className="flex gap-1 justify-end">
                       {editingId === p.id ? (
-                        <>
-                          <Button size="sm" variant="ghost" icon={Check} onClick={() => { setEditingId(null); load() }} />
-                          <Button size="sm" variant="ghost" icon={X} onClick={() => setEditingId(null)} />
-                        </>
+                        isManager && (
+                          <>
+                            <Button size="sm" variant="ghost" icon={Check} onClick={() => { setEditingId(null); load() }} />
+                            <Button size="sm" variant="ghost" icon={X} onClick={() => setEditingId(null)} />
+                          </>
+                        )
                       ) : (
                         <>
                           <Button size="sm" variant="ghost" icon={BarChart3} onClick={() => showStats(p.id)} />
-                          <Button size="sm" variant="ghost" icon={PencilLine} onClick={() => { setEditingId(p.id); setEditValue(p.nickname) }} />
-                          <Button size="sm" variant="ghost" icon={Trash2} onClick={() => { api.players.delete(p.id).then(load) }} />
+                          {isManager && (
+                            <>
+                              <Button size="sm" variant="ghost" icon={PencilLine} onClick={() => { setEditingId(p.id); setEditValue(p.nickname) }} />
+                              <Button size="sm" variant="ghost" icon={Trash2} onClick={() => { api.players.delete(p.id).then(load) }} />
+                            </>
+                          )}
                         </>
                       )}
                     </div>

@@ -10,11 +10,12 @@ import { Create } from './pages/Create'
 import { Settings } from './pages/Settings'
 import { Profile } from './pages/Profile'
 import { Invite } from './pages/Invite'
+import { Admin } from './pages/Admin'
 import { Sidebar } from './components/layout/Sidebar'
 import { MobileNav } from './components/layout/MobileNav'
 import { api, storage } from './services/api'
 
-type Page = 'home' | 'login' | 'register' | 'dashboard' | 'tournament-list' | 'tournament-detail' | 'players' | 'create' | 'settings' | 'profile' | 'invite'
+type Page = 'home' | 'login' | 'register' | 'dashboard' | 'tournament-list' | 'tournament-detail' | 'players' | 'create' | 'settings' | 'profile' | 'invite' | 'admin'
 
 function parseHash(): { page: Page; tournamentId: number | null; codigo: string | null } {
   const hash = window.location.hash.replace('#', '')
@@ -59,12 +60,19 @@ export default function App() {
     return () => window.removeEventListener('hashchange', onHashChange)
   }, [])
 
+  const isAdmin = storage.user?.role === 'ADMIN'
+
   if (page === 'home') return <Home onNavigate={navigate} />
   if (page === 'login') return <Login onNavigate={navigate} />
   if (page === 'register') return <Register onNavigate={navigate} />
   if (page === 'invite') return <Invite onNavigate={navigate} codigo={inviteCode!} />
 
   if (!storage.token) return <Login onNavigate={navigate} />
+
+  if (page === 'admin' && !isAdmin) {
+    window.location.hash = '#/dashboard'
+    return null
+  }
 
   return (
     <div className="flex h-screen overflow-hidden">
@@ -86,6 +94,7 @@ export default function App() {
         {page === 'create' && <Create onNavigate={navigate} />}
         {page === 'settings' && <Settings />}
         {page === 'profile' && <Profile onNavigate={navigate} />}
+        {page === 'admin' && isAdmin && <Admin />}
       </div>
 
       <MobileNav
