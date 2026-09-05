@@ -2,6 +2,7 @@ export interface Tournament {
   id: number
   name: string
   game: string
+  fk_owner: number | null
   fk_winner_id: number | null
   status: string
   criado_em: string
@@ -15,6 +16,22 @@ export interface TournamentInvite {
   expira_em: string | null
   usos_max: number
   usos: number
+}
+
+export interface TournamentInviteUsage {
+  playerId: number
+  nickname: string
+  usadoEm: string
+}
+
+export interface TournamentInviteDetail {
+  id: number
+  codigo: string
+  criadoEm: string
+  expiraEm: string | null
+  usosMax: number | null
+  usos: number
+  usosDetalhados: TournamentInviteUsage[]
 }
 
 export interface InviteInfo {
