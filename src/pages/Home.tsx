@@ -66,9 +66,9 @@ export function Home({ onNavigate }: Props) {
   const activeTournaments = tournaments.filter(t => t.status !== 'FINISHED')
 
   return (
-    <div className="h-screen overflow-y-auto">
+    <div className="h-dvh overflow-y-auto">
       <div className="max-w-[900px] mx-auto px-6 py-6">
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center justify-between mb-8 gap-3 flex-wrap">
           <div className="flex items-center gap-2.5">
             <div className="w-7 h-7 bg-purple rounded-sm flex items-center justify-center text-[11px] font-bold text-white">PT</div>
             <span className="text-sm font-semibold tracking-wider uppercase">Punish</span>
@@ -111,7 +111,7 @@ export function Home({ onNavigate }: Props) {
         </div>
 
         {!hasTournaments && (
-          <div className="grid grid-cols-[1fr_260px] gap-5 items-start">
+          <div className="grid grid-cols-1 md:grid-cols-[1fr_260px] gap-5 items-start">
             <div className="bg-bg-el border border-border rounded-md p-4">
               <div className="text-sm font-semibold mb-3">Criar torneio</div>
               <div className="flex flex-col gap-2.5">

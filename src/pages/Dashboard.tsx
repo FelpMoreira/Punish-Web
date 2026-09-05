@@ -42,15 +42,15 @@ export function Dashboard({ onNavigate }: Props) {
         title="Dashboard"
         actions={
           <>
-            <span className="text-xs text-soft">Next call: Winners Final · 18:30</span>
+            <span className="hidden md:inline text-xs text-soft">Next call: Winners Final · 18:30</span>
             <Button size="sm" icon={Trophy} onClick={() => onNavigate('create')}>
               New tournament
             </Button>
           </>
         }
       />
-      <div className="flex-1 overflow-y-auto p-5">
-        <div className="flex gap-px bg-border rounded-md overflow-hidden border border-border mb-5">
+      <div className="flex-1 overflow-y-auto p-4 md:p-5">
+        <div className="grid grid-cols-2 md:flex gap-px bg-border rounded-md overflow-hidden border border-border mb-5">
           {[
             { label: 'Active tournaments', value: tournaments.filter(t => t.status === 'STARTED').length, sub: `${tournaments.filter(t => t.status === 'STARTED').length} in finals · ${tournaments.filter(t => t.status === 'CREATED').length} open`, color: 'text-purple' },
             { label: 'Total players', value: totalPlayers, sub: `Across all tournaments`, color: 'text-green' },
@@ -65,7 +65,7 @@ export function Dashboard({ onNavigate }: Props) {
           ))}
         </div>
 
-        <div className="grid grid-cols-[1fr_280px] gap-4 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-4 items-start">
           <div className="flex flex-col gap-4">
             <Card title="Active tournaments" action={
               <Button variant="ghost" size="sm" onClick={() => onNavigate('tournament-list')}>

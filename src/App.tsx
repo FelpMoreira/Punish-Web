@@ -11,6 +11,7 @@ import { Settings } from './pages/Settings'
 import { Profile } from './pages/Profile'
 import { Invite } from './pages/Invite'
 import { Sidebar } from './components/layout/Sidebar'
+import { MobileNav } from './components/layout/MobileNav'
 import { api, storage } from './services/api'
 
 type Page = 'home' | 'login' | 'register' | 'dashboard' | 'tournament-list' | 'tournament-detail' | 'players' | 'create' | 'settings' | 'profile' | 'invite'
@@ -77,7 +78,7 @@ export default function App() {
             }}
           />
 
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col overflow-hidden pb-14 md:pb-0">
         {page === 'dashboard' && <Dashboard onNavigate={navigate} />}
         {page === 'tournament-list' && <TournamentList onNavigate={navigate} />}
         {page === 'tournament-detail' && <TournamentDetail onNavigate={navigate} tournamentId={selectedTournamentId!} />}
@@ -86,6 +87,16 @@ export default function App() {
         {page === 'settings' && <Settings />}
         {page === 'profile' && <Profile onNavigate={navigate} />}
       </div>
+
+      <MobileNav
+        active={page}
+        onNavigate={(p) => navigate(p)}
+        onLogout={() => {
+          api.auth.logout()
+          window.location.hash = '#/login'
+          setPage('login')
+        }}
+      />
     </div>
   )
 }

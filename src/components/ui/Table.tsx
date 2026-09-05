@@ -13,8 +13,8 @@ interface Props<T> {
 
 export function Table<T>({ columns, data }: Props<T>) {
   return (
-    <div className="border border-border rounded-md overflow-hidden">
-      <table className="w-full border-collapse">
+    <div className="border border-border rounded-md overflow-x-auto">
+      <table className="w-full border-collapse min-w-[520px]">
         <thead className="bg-bg-el">
           <tr>
             {columns.map((col) => (

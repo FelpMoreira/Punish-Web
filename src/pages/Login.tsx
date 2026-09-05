@@ -29,7 +29,7 @@ export function Login({ onNavigate }: Props) {
   }
 
   return (
-    <div className="h-screen flex items-center justify-center px-4">
+    <div className="h-dvh flex items-center justify-center px-4">
       <div className="w-full max-w-[340px]">
         <div className="flex items-center justify-center gap-2.5 mb-6">
           <div className="w-7 h-7 bg-purple rounded-sm flex items-center justify-center text-[11px] font-bold text-white">PT</div>

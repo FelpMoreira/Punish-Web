@@ -303,8 +303,8 @@ export function TournamentDetail({ onNavigate, tournamentId }: Props) {
         </div>
       )}
 
-      <div className="flex-1 overflow-y-auto p-5">
-        <div className="grid grid-cols-[1fr_300px] gap-4 items-start">
+      <div className="flex-1 overflow-y-auto p-4 md:p-5">
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-4 items-start">
           <div className="flex flex-col gap-4">
             <Card
               title={`Matches (${matches.length})`}

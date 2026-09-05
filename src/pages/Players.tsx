@@ -36,7 +36,7 @@ export function Players() {
   return (
     <>
       <Topbar title="Players" />
-      <div className="flex-1 overflow-y-auto p-5">
+      <div className="flex-1 overflow-y-auto p-4 md:p-5">
         <div className="max-w-[600px]">
           <div className="relative mb-3">
             <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted" />
@@ -103,7 +103,7 @@ export function Players() {
                   </span>
                   <button onClick={() => { setStatsId(null); setStats(null) }} className="text-muted hover:text-red cursor-pointer text-xs">✕</button>
                 </div>
-                <div className="grid grid-cols-4 gap-3 text-center">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
                   <div>
                     <div className="text-lg font-bold">{stats.totalTournaments}</div>
                     <div className="text-[10px] text-muted uppercase tracking-wider">Torneios</div>

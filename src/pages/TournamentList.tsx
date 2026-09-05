@@ -53,8 +53,8 @@ export function TournamentList({ onNavigate }: Props) {
           </Button>
         }
       />
-      <div className="flex-1 overflow-y-auto p-5">
-        <div className="flex gap-2 mb-4">
+      <div className="flex-1 overflow-y-auto p-4 md:p-5">
+        <div className="flex flex-col sm:flex-row gap-2 mb-4">
           <div className="relative flex-1">
             <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted" />
             <input
@@ -87,7 +87,7 @@ export function TournamentList({ onNavigate }: Props) {
         <div className="flex flex-col gap-3">
           {tournaments.map((t) => (
             <Card key={t.id} className="!p-0">
-              <div className="flex items-center px-4 py-3 gap-4">
+              <div className="flex items-center px-4 py-3 gap-3 flex-wrap">
                 <div className="flex-1">
                   <div className="flex items-center gap-2.5 mb-0.5">
                     <span className="text-sm font-semibold">{t.name}</span>

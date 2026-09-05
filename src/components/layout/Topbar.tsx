@@ -7,7 +7,7 @@ interface Props {
 
 export function Topbar({ breadcrumb, title, actions, onNavigate }: Props) {
   return (
-    <div className="h-12 border-b border-border flex items-center justify-between px-6 flex-shrink-0 bg-bg-el gap-3">
+    <div className="min-h-12 border-b border-border flex items-center justify-between px-4 md:px-6 flex-shrink-0 bg-bg-el gap-2 md:gap-3 flex-wrap py-1.5">
       <div className="flex items-center gap-1.5">
         {breadcrumb ? (
           <div className="flex items-center gap-1.5 text-sm text-muted">

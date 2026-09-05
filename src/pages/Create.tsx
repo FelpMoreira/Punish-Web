@@ -34,7 +34,7 @@ export function Create({ onNavigate }: Props) {
           { label: 'Create Tournament' },
         ]}
       />
-      <div className="flex-1 overflow-y-auto p-5">
+      <div className="flex-1 overflow-y-auto p-4 md:p-5">
         <div className="max-w-[420px]">
           <Card title="Create Tournament">
             <div className="flex flex-col gap-3">

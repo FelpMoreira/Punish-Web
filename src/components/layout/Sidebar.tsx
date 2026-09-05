@@ -17,7 +17,7 @@ const links = [
 
 export function Sidebar({ active, onNavigate, onLogout }: Props) {
   return (
-    <aside className="w-[220px] flex-shrink-0 bg-bg-el border-r border-border flex flex-col overflow-hidden">
+    <aside className="hidden md:flex w-[220px] flex-shrink-0 bg-bg-el border-r border-border flex-col overflow-hidden">
       <div className="flex items-center gap-2.5 px-4 py-4 border-b border-border">
         <div className="w-7 h-7 bg-purple rounded-sm flex items-center justify-center text-[11px] font-bold text-white flex-shrink-0">
           PT

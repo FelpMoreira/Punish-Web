@@ -45,7 +45,7 @@ export function Profile({ onNavigate }: Props) {
   )
 
   return (
-    <div className="h-screen overflow-y-auto">
+    <div className="h-dvh overflow-y-auto">
       <div className="max-w-[700px] mx-auto px-6 py-6">
         <div className="flex items-center justify-between mb-6">
           <div className="text-sm font-semibold tracking-wider uppercase">Perfil</div>
