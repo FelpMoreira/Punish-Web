@@ -195,7 +195,9 @@ export const api = {
         body: JSON.stringify({ expiraEm, usosMax }),
       }),
     listInvites: (tournamentId: number) =>
-      request<import('../types').TournamentInvite[]>(`/tournaments/${tournamentId}/invite`),
+      request<import('../types').TournamentInviteDetail[]>(`/tournaments/${tournamentId}/invite`),
+    revokeInvite: (tournamentId: number, inviteId: number) =>
+      request<void>(`/tournaments/${tournamentId}/invite/${inviteId}`, { method: 'DELETE' }),
     joinInvite: (codigo: string) =>
       request<void>(`/invites/${codigo}/join`, { method: 'POST' }),
     getInvite: (codigo: string) =>
