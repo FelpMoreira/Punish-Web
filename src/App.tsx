@@ -28,7 +28,7 @@ function parseHash(): { page: Page; tournamentId: number | null; codigo: string 
   return { page: parts[0] as Page, tournamentId: null, codigo: null }
 }
 
-function buildHash(page: Page, tournamentId?: number, codigo?: string): string {
+function buildHash(page: Page, tournamentId?: number | string, codigo?: string): string {
   if (page === 'tournament-detail' && tournamentId) return `#/tournament-detail/${tournamentId}`
   if (page === 'invite' && codigo) return `#/invite/${codigo}`
   return `#/${page}`
@@ -39,11 +39,11 @@ export default function App() {
   const [selectedTournamentId, setSelectedTournamentId] = useState<number | null>(() => parseHash().tournamentId)
   const [inviteCode, setInviteCode] = useState<string | null>(() => parseHash().codigo)
 
-  const navigate = useCallback((p: string, tournamentId?: number, codigo?: string) => {
+  const navigate = useCallback((p: string, tournamentId?: number | string, codigo?: string) => {
     const pg = p as Page
     window.location.hash = buildHash(pg, tournamentId, codigo)
     setPage(pg)
-    if (tournamentId) setSelectedTournamentId(tournamentId)
+    if (tournamentId) setSelectedTournamentId(Number(tournamentId))
     if (codigo) setInviteCode(codigo)
   }, [])
 
