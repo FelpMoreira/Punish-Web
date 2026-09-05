@@ -202,6 +202,20 @@ export const api = {
       request<void>(`/invites/${codigo}/join`, { method: 'POST' }),
     getInvite: (codigo: string) =>
       request<import('../types').InviteInfo>(`/invites/${codigo}`),
+    solicitarPedido: (tournamentId: number) =>
+      request<import('../types').TournamentRequest>(`/tournaments/${tournamentId}/requests`, {
+        method: 'POST',
+      }),
+    listarPedidos: (tournamentId: number) =>
+      request<import('../types').TournamentRequest[]>(`/tournaments/${tournamentId}/requests`),
+    aceitarPedido: (tournamentId: number, playerId: number) =>
+      request<void>(`/tournaments/${tournamentId}/requests/${playerId}/accept`, {
+        method: 'POST',
+      }),
+    rejeitarPedido: (tournamentId: number, playerId: number) =>
+      request<void>(`/tournaments/${tournamentId}/requests/${playerId}/reject`, {
+        method: 'POST',
+      }),
   },
   players: {
     list: (nickname?: string) => {
