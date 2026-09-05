@@ -6,7 +6,7 @@ import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
 import { Table } from '../components/ui/Table'
 import { Topbar } from '../components/layout/Topbar'
-import type { Tournament, Player, Match, Ranking } from '../types'
+import type { Tournament, Player, Match, Ranking, TournamentInviteDetail } from '../types'
 import { X, Trash2, GitBranch, UserPlus, Play, RefreshCw, Copy } from 'lucide-react'
 
 interface Props {
@@ -26,6 +26,8 @@ export function TournamentDetail({ onNavigate, tournamentId }: Props) {
   const [copied, setCopied] = useState(false)
   const [expiraEm, setExpiraEm] = useState('')
   const [usosMax, setUsosMax] = useState('')
+  const [invites, setInvites] = useState<TournamentInviteDetail[]>([])
+  const [copiedInviteId, setCopiedInviteId] = useState<number | null>(null)
 
   const inviteUrl = inviteCode ? `${window.location.origin}/#/invite/${inviteCode}` : ''
 
@@ -36,12 +38,28 @@ export function TournamentDetail({ onNavigate, tournamentId }: Props) {
     setTimeout(() => setCopied(false), 2000)
   }
 
+  const copyInviteCode = (invite: TournamentInviteDetail) => {
+    navigator.clipboard.writeText(`${window.location.origin}/#/invite/${invite.codigo}`)
+    setCopiedInviteId(invite.id)
+    setTimeout(() => setCopiedInviteId(null), 2000)
+  }
+
+  const revokeInvite = (inviteId: number) => {
+    api.tournaments.revokeInvite(tournamentId, inviteId).then(load).catch(() => {})
+  }
+
+  const formatDate = (iso: string) => {
+    const d = new Date(iso)
+    return isNaN(d.getTime()) ? iso : d.toLocaleString('pt-BR')
+  }
+
   const load = () => {
     api.tournaments.get(tournamentId).then(setTournament).catch(() => {})
     api.tournaments.players(tournamentId).then(setPlayers).catch(() => {})
     api.tournaments.matches(tournamentId).then(setMatches).catch(() => {})
     api.players.list().then(setAllPlayers).catch(() => {})
     api.tournaments.ranking(tournamentId).then(setRanking).catch(() => {})
+    api.tournaments.listInvites(tournamentId).then(setInvites).catch(() => {})
     setSelectedToAdd([])
   }
 
@@ -347,6 +365,52 @@ export function TournamentDetail({ onNavigate, tournamentId }: Props) {
                 </div>
               )}
             </Card>
+
+            {tournament && storage.user && tournament.fk_owner === storage.user.id && (
+              <Card title={`Convites (${invites.length})`}>
+                <div className="flex flex-col gap-1 -mx-4 -mt-3">
+                  {invites.length === 0 && (
+                    <div className="text-sm text-muted text-center py-4">Nenhum convite gerado ainda.</div>
+                  )}
+                  {invites.map((invite) => (
+                    <div key={invite.id} className="px-4 py-2 border-b border-border last:border-b-0">
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => copyInviteCode(invite)}
+                          className="flex items-center gap-1 text-xs font-mono text-purple hover:underline cursor-pointer truncate"
+                          title="Copiar link de convite"
+                        >
+                          <Copy size={12} />
+                          {invite.codigo.slice(0, 8)}…
+                        </button>
+                        <span className="text-xs text-muted flex-1 text-right">
+                          {invite.usos}/{invite.usosMax ?? '∞'} usos
+                        </span>
+                        <button onClick={() => revokeInvite(invite.id)} className="text-muted hover:text-red cursor-pointer p-0.5" title="Revogar convite">
+                          <Trash2 size={13} />
+                        </button>
+                      </div>
+                      {copiedInviteId === invite.id && (
+                        <div className="text-[11px] text-green mt-1">Link copiado!</div>
+                      )}
+                      <div className="text-[11px] text-muted mt-0.5">
+                        Expira {invite.expiraEm ? formatDate(invite.expiraEm) : 'sem data'}
+                      </div>
+                      {invite.usosDetalhados.length > 0 && (
+                        <div className="mt-1.5 flex flex-col gap-0.5 border-t border-border pt-1.5">
+                          {invite.usosDetalhados.map((uso) => (
+                            <div key={uso.playerId + uso.usadoEm} className="flex items-center justify-between text-[11px] text-muted">
+                              <span>{uso.nickname}</span>
+                              <span>{formatDate(uso.usadoEm)}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </Card>
+            )}
 
             {tournament?.fk_winner_id && (
               <Card title="Champion">
