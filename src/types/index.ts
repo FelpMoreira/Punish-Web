@@ -34,6 +34,14 @@ export interface TournamentInviteDetail {
   usosDetalhados: TournamentInviteUsage[]
 }
 
+export interface TournamentRequest {
+  id: number
+  fk_tournament_id: number
+  fk_player_id: number
+  status: string
+  criado_em: string
+}
+
 export interface InviteInfo {
   codigo: string
   usos_max: number | null
