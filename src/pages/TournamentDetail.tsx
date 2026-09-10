@@ -6,8 +6,9 @@ import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
 import { Table } from '../components/ui/Table'
 import { Topbar } from '../components/layout/Topbar'
+import { BracketTree } from '../components/tournament/BracketTree'
 import type { Tournament, Player, Match, Ranking, TournamentInviteDetail, TournamentRequest } from '../types'
-import { X, Trash2, GitBranch, UserPlus, Play, RefreshCw, Copy } from 'lucide-react'
+import { X, Trash2, GitBranch, UserPlus, Play, RefreshCw, Copy, List, TreePine } from 'lucide-react'
 
 interface Props {
   onNavigate: (page: string, id?: number | string) => void
@@ -30,6 +31,7 @@ export function TournamentDetail({ onNavigate, tournamentId }: Props) {
   const [copiedInviteId, setCopiedInviteId] = useState<number | null>(null)
   const [requests, setRequests] = useState<TournamentRequest[]>([])
   const [solicitado, setSolicitado] = useState(false)
+  const [viewMode, setViewMode] = useState<'table' | 'bracket'>('table')
 
   const inviteUrl = inviteCode ? `${window.location.origin}/#/invite/${inviteCode}` : ''
 
@@ -309,27 +311,62 @@ export function TournamentDetail({ onNavigate, tournamentId }: Props) {
             <Card
               title={`Matches (${matches.length})`}
               action={
-                firstReadyRound !== undefined && tournament?.status !== 'FINISHED' ? (
-                  <Button size="sm" icon={Play} onClick={() => startRound(firstReadyRound)}>
-                    Start Round {firstReadyRound}
-                  </Button>
-                ) : undefined
+                <div className="flex items-center gap-2">
+                  <div className="flex border border-border rounded-sm overflow-hidden">
+                    <button
+                      onClick={() => setViewMode('table')}
+                      className={`flex items-center gap-1 px-2 py-1 text-xs cursor-pointer transition-colors ${
+                        viewMode === 'table'
+                          ? 'bg-purple text-white'
+                          : 'bg-bg-surf text-muted hover:text-text'
+                      }`}
+                    >
+                      <List size={12} />
+                      Table
+                    </button>
+                    <button
+                      onClick={() => setViewMode('bracket')}
+                      className={`flex items-center gap-1 px-2 py-1 text-xs cursor-pointer transition-colors ${
+                        viewMode === 'bracket'
+                          ? 'bg-purple text-white'
+                          : 'bg-bg-surf text-muted hover:text-text'
+                      }`}
+                    >
+                      <TreePine size={12} />
+                      Bracket
+                    </button>
+                  </div>
+                  {viewMode === 'table' && firstReadyRound !== undefined && tournament?.status !== 'FINISHED' ? (
+                    <Button size="sm" icon={Play} onClick={() => startRound(firstReadyRound)}>
+                      Start Round {firstReadyRound}
+                    </Button>
+                  ) : undefined}
+                </div>
               }
             >
               {matches.length > 0 ? (
-                <div className="-mx-4 -mb-3">
-                  <Table
-                    columns={[
-                      { key: 'round', header: 'Round', render: (m: Match) => <span className="text-xs">R{m.round_number}</span> },
-                      { key: 'p1', header: 'Player 1', render: (m: Match) => m.fk_player1_id ? players.find(p => p.id === m.fk_player1_id)?.nickname || `#${m.fk_player1_id}` : <span className="text-muted italic text-xs">TBD</span> },
-                      { key: 'vs', header: '', render: () => <span className="text-soft text-xs">vs</span> },
-                      { key: 'p2', header: 'Player 2', render: (m: Match) => m.fk_player2_id ? players.find(p => p.id === m.fk_player2_id)?.nickname || `#${m.fk_player2_id}` : <span className="text-muted italic text-xs">TBD</span> },
-                      { key: 'status', header: '', render: (m: Match) => statusLabel(m) },
-                      { key: 'actions', header: '', render: renderActions },
-                    ]}
-                    data={matches.sort((a, b) => a.round_number - b.round_number || a.id - b.id)}
+                viewMode === 'bracket' ? (
+                  <BracketTree
+                    matches={matches}
+                    players={players}
+                    onSubmitResult={submitResult}
+                    onStartMatch={startMatch}
                   />
-                </div>
+                ) : (
+                  <div className="-mx-4 -mb-3">
+                    <Table
+                      columns={[
+                        { key: 'round', header: 'Round', render: (m: Match) => <span className="text-xs">R{m.round_number}</span> },
+                        { key: 'p1', header: 'Player 1', render: (m: Match) => m.fk_player1_id ? players.find(p => p.id === m.fk_player1_id)?.nickname || `#${m.fk_player1_id}` : <span className="text-muted italic text-xs">TBD</span> },
+                        { key: 'vs', header: '', render: () => <span className="text-soft text-xs">vs</span> },
+                        { key: 'p2', header: 'Player 2', render: (m: Match) => m.fk_player2_id ? players.find(p => p.id === m.fk_player2_id)?.nickname || `#${m.fk_player2_id}` : <span className="text-muted italic text-xs">TBD</span> },
+                        { key: 'status', header: '', render: (m: Match) => statusLabel(m) },
+                        { key: 'actions', header: '', render: renderActions },
+                      ]}
+                      data={matches.sort((a, b) => a.round_number - b.round_number || a.id - b.id)}
+                    />
+                  </div>
+                )
               ) : (
                 <div className="text-sm text-muted text-center py-6">
                   {tournament?.status === 'CREATED' ? 'Generate a bracket to see matches.' : 'No matches yet.'}
