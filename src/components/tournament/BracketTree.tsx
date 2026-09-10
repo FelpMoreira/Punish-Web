@@ -9,10 +9,12 @@ interface Props {
   onStartMatch: (matchId: number) => void
 }
 
-const CARD_W = 180
-const CARD_H = 56
-const V_GAP = 26
-const H_GAP = 32
+const CARD_W = 200
+const CARD_H = 66
+const V_GAP = 44
+const H_GAP = 60
+const HEADER_H = 56
+const PAD = 12
 
 const SECTION_COLORS: Record<string, string> = {
   WINNERS: '#22d3ee',
@@ -46,11 +48,22 @@ const buildColumns = (list: Match[]): Column[] => {
   return cols
 }
 
-// posição vertical: cada match de uma rodada "span" cobre 2^(r) slots de folha
-const columnHeight = (cols: Column[], colIdx: number): number => {
-  const count = cols[colIdx].matches.length
-  return count * CARD_H + (count - 1) * V_GAP
+const slotH = CARD_H + V_GAP
+
+// match na coluna `colIdx` index `index` cobre 2^colIdx slots de folha,
+// centralizado entre seus dois filhos da coluna anterior
+const posY = (colIdx: number, index: number): number => {
+  const span = 2 ** colIdx
+  return HEADER_H + PAD + (index * span + (span - 1) / 2) * slotH
 }
+
+const sectionHeight = (leafCount: number): number =>
+  HEADER_H + PAD * 2 + leafCount * slotH
+
+const columnLeft = (colIdx: number): number => colIdx * (CARD_W + H_GAP)
+
+const columnRight = (colIdx: number): number =>
+  (colIdx + 1) * CARD_W + colIdx * H_GAP
 
 const totalWidth = (nCols: number): number => nCols * CARD_W + (nCols - 1) * H_GAP
 
@@ -62,17 +75,15 @@ export function BracketTree({ matches, players, onSubmitResult, onStartMatch }: 
     return out
   }, [matches])
 
-  const hasMatches = matches.length > 0
-
-  if (!hasMatches) {
+  if (!matches.length) {
     return (
       <div className="text-sm text-muted text-center py-6">No matches yet.</div>
     )
   }
 
   return (
-    <div className="overflow-x-auto pb-2">
-      <div className="flex gap-12 min-w-max">
+    <div className="overflow-x-auto pb-3">
+      <div className="flex gap-14 min-w-max">
         {(['WINNERS', 'LOSERS', 'GRAND_FINAL'] as const).map((sectionKey) => {
           const sectionMatches = sections[sectionKey]
           if (!sectionMatches.length) return null
@@ -80,51 +91,49 @@ export function BracketTree({ matches, players, onSubmitResult, onStartMatch }: 
           const cols = buildColumns(sectionMatches)
           const color = SECTION_COLORS[sectionKey]
           const label = SECTION_LABELS[sectionKey]
-          const height = Math.max(...cols.map((_, i) => {
-            let h = 0
-            for (let j = 0; j < cols.length; j++) h += columnHeight(cols, j)
-            return columnHeight(cols, i) * 2 ** i + 48
-          }), columnHeight(cols, 0) + 48)
-
+          const leafCount = cols[0].matches.length
+          const height = sectionHeight(leafCount)
           const width = totalWidth(cols.length)
 
-          const posY = (colIdx: number, index: number, count: number): number => {
-            // match em round r cobre 2^r slots de folha, centralizado
-            const span = 2 ** colIdx
-            const slotH = CARD_H + V_GAP
-            const center = (count - 1) * slotH * (span / 2)
-            return 48 + center + (index * span + (span - 1) / 2) * slotH - CARD_H / 2
-          }
-
           const pos = (vm: ViewMatch, colIdx: number): number =>
-            posY(colIdx, vm.index, cols[colIdx].matches.length)
+            posY(colIdx, vm.index)
 
           return (
             <div key={sectionKey} className="flex flex-col flex-shrink-0 gap-3">
               <div
-                className="text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-sm border w-fit"
+                className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1.5 rounded-md border w-fit"
                 style={{ color, borderColor: `${color}40`, background: `${color}14` }}
               >
                 {label}
               </div>
 
               <div className="relative" style={{ width, height }}>
-                {/* conectores dos vencedores */}
+                {/* conectores: do match pro próximo (win/lose path) */}
                 {cols.slice(0, -1).flatMap((col, colIdx) =>
                   col.matches.flatMap((vm) => {
-                    if (!vm.m.fk_next_match_win_id) return []
-                    const fromX = (colIdx + 1) * CARD_W + colIdx * H_GAP
-                    const fromY = pos(vm, colIdx) + CARD_H / 2
                     const parentCol = colIdx + 1
-                    const parentVm = cols[parentCol]?.matches.find((p) => p.m.id === vm.m.fk_next_match_win_id)
-                    if (!parentVm) return []
-                    const toX = parentCol * CARD_W + (parentCol - 1) * H_GAP
-                    const toY = pos(parentVm, parentCol) + CARD_H / 2
-
-                    return [
-                      <line key={`h-${colIdx}-${vm.index}`} x1={fromX} y1={fromY} x2={toX} y2={fromY} stroke={color} strokeOpacity="0.4" strokeWidth={1} />,
-                      <line key={`v-${colIdx}-${vm.index}`} x1={toX} y1={fromY} x2={toX} y2={toY} stroke={color} strokeOpacity="0.4" strokeWidth={1} />,
+                    const flows: { next: number | null; keySuffix: string }[] = [
+                      { next: vm.m.fk_next_match_win_id, keySuffix: 'w' },
+                      { next: vm.m.fk_next_match_lose_id, keySuffix: 'l' },
                     ]
+                    return flows.flatMap(({ next, keySuffix }) => {
+                      if (!next) return []
+                      const parentVm = cols[parentCol]?.matches.find((p) => p.m.id === next)
+                      if (!parentVm) return []
+
+                      const fromX = columnRight(colIdx)
+                      const fromY = pos(vm, colIdx) + CARD_H / 2
+                      const toX = columnLeft(parentCol)
+                      const toY = pos(parentVm, parentCol) + CARD_H / 2
+
+                      const lineColor = keySuffix === 'l' ? '#f59e0b' : color
+                      const dash = keySuffix === 'l' ? '5 4' : undefined
+
+                      return [
+                        <line key={`h-${colIdx}-${vm.index}-${keySuffix}`} x1={fromX} y1={fromY} x2={toX} y2={fromY} stroke={lineColor} strokeOpacity="0.55" strokeWidth={1.5} strokeDasharray={dash} />,
+                        <line key={`v-${colIdx}-${vm.index}-${keySuffix}`} x1={toX} y1={fromY} x2={toX} y2={toY} stroke={lineColor} strokeOpacity="0.55" strokeWidth={1.5} strokeDasharray={dash} />,
+                      ]
+                    })
                   })
                 )}
 
@@ -132,10 +141,14 @@ export function BracketTree({ matches, players, onSubmitResult, onStartMatch }: 
                 {cols.map((_, colIdx) => (
                   <div
                     key={colIdx}
-                    className="absolute top-0 text-[10px] uppercase tracking-wider text-soft font-semibold text-center"
-                    style={{ left: colIdx * (CARD_W + H_GAP), width: CARD_W }}
+                    className="absolute text-[10px] uppercase tracking-wider text-soft font-semibold text-center"
+                    style={{ left: columnLeft(colIdx), width: CARD_W, top: PAD }}
                   >
-                    {sectionKey === 'GRAND_FINAL' && cols.length === 1 ? 'Final' : `Round ${colIdx + 1}`}
+                    {sectionKey === 'GRAND_FINAL' && cols.length === 1
+                      ? 'Final'
+                      : colIdx === cols.length - 1
+                        ? 'Final'
+                        : `Round ${colIdx + 1}`}
                   </div>
                 ))}
 
@@ -145,7 +158,7 @@ export function BracketTree({ matches, players, onSubmitResult, onStartMatch }: 
                     <div
                       key={vm.m.id}
                       className="absolute"
-                      style={{ left: colIdx * (CARD_W + H_GAP), top: pos(vm, colIdx), width: CARD_W }}
+                      style={{ left: columnLeft(colIdx), top: pos(vm, colIdx), width: CARD_W }}
                     >
                       <MatchCard
                         m={vm.m}
@@ -189,9 +202,9 @@ function MatchCard({ m, playerName, onSubmitResult, onStartMatch }: {
       : <Badge variant={ready ? 'waiting' : 'next'}>{ready ? 'Ready' : 'Waiting'}</Badge>
 
   return (
-    <div className={`border border-border rounded-sm bg-bg-el overflow-hidden ${picking ? '' : ''}`}>
+    <div className={`border border-border rounded-md bg-bg-el shadow-lg shadow-black/30 overflow-hidden ${picking ? 'ring-1 ring-purple/40' : ''}`}>
       <div className="h-1.5 w-full" style={{ background: topColor }} />
-      <div className="px-2.5 py-2 flex flex-col gap-1.5">
+      <div className="px-3 py-2.5 flex flex-col gap-2">
         <PlayerRow
           label={playerName(m.fk_player1_id)}
           muted={!m.fk_player1_id}
@@ -206,7 +219,7 @@ function MatchCard({ m, playerName, onSubmitResult, onStartMatch }: {
           onPick={picking ? () => onSubmitResult(m.id, m.fk_player2_id!) : undefined}
         />
       </div>
-      <div className="flex items-center justify-between px-2.5 pb-2">
+      <div className="flex items-center justify-between px-3 pb-2">
         {statusLabel}
         {canStart && (
           <button
@@ -230,12 +243,12 @@ function PlayerRow({ label, muted, winner, onPick }: {
   const classes = [
     'flex items-center gap-1.5 min-w-0',
     winner ? 'text-green font-semibold' : '',
-    onPick ? 'cursor-pointer hover:bg-bg-surf rounded-sm px-0.5 -mx-0.5' : '',
+    onPick ? 'cursor-pointer hover:bg-bg-surf rounded-sm px-1 -mx-1' : '',
     onPick ? 'text-text' : muted ? 'text-muted italic' : 'text-text',
   ].filter(Boolean).join(' ')
 
   return (
-    <div className={`text-xs truncate ${classes}`} onClick={onPick} title={onPick ? `Marcar ${label} como vencedor` : label}>
+    <div className={`text-[13px] truncate ${classes}`} onClick={onPick} title={onPick ? `Marcar ${label} como vencedor` : label}>
       <span
         className="w-1.5 h-1.5 rounded-full flex-shrink-0"
         style={{ background: winner ? '#22c55e' : '#52525e' }}
