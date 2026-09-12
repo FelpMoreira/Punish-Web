@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useReducer } from 'react'
 import { Home } from './pages/Home'
 import { Login } from './pages/Login'
 import { Register } from './pages/Register'
@@ -40,6 +40,7 @@ export default function App() {
   const [page, setPage] = useState<Page>(() => parseHash().page)
   const [selectedTournamentId, setSelectedTournamentId] = useState<number | null>(() => parseHash().tournamentId)
   const [inviteCode, setInviteCode] = useState<string | null>(() => parseHash().codigo)
+  const [, forceRender] = useReducer((x: number) => x + 1, 0)
 
   const navigate = useCallback((p: string, tournamentId?: number | string, codigo?: string) => {
     const pg = p as Page
@@ -58,6 +59,11 @@ export default function App() {
     }
     window.addEventListener('hashchange', onHashChange)
     return () => window.removeEventListener('hashchange', onHashChange)
+  }, [])
+
+  useEffect(() => {
+    if (!storage.token) return
+    api.auth.me().then(() => forceRender()).catch(() => forceRender())
   }, [])
 
   const isAdmin = storage.user?.role === 'ADMIN'

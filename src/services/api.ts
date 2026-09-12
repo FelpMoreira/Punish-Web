@@ -74,6 +74,11 @@ async function refreshToken(): Promise<string | null> {
       const data = await res.json()
       storage.token = data.token
       storage.refreshToken = data.refreshToken
+      try {
+        storage.user = await loadCurrentUser()
+      } catch {
+        // recarregar o perfil pode falhar sem invalidar o refresh
+      }
       return data.token
     } catch {
       return null
@@ -94,12 +99,14 @@ async function request<T>(path: string, options?: RequestInit, isRetry = false):
     ...options,
   })
   if (!res.ok) {
-    if (res.status === 401 && token && !isRetry) {
-      const newToken = await refreshToken()
-      if (newToken) return request<T>(path, options, true)
+    if (res.status === 401 || res.status === 403) {
+      if (token && !isRetry) {
+        const newToken = await refreshToken()
+        if (newToken) return request<T>(path, options, true)
+      }
+      const text = await res.text()
+      throw new Error(text || `HTTP ${res.status}`)
     }
-    const text = await res.text()
-    throw new Error(text || `HTTP ${res.status}`)
   }
   if (res.status === 204) return undefined as T
   return res.json()
