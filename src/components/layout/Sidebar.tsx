@@ -60,13 +60,7 @@ export function Sidebar({ active, onNavigate, onLogout }: Props) {
             Log out
           </button>
         )}
-        <div className="text-[11px] text-soft leading-relaxed">
-          <span className="inline-block w-1.5 h-1.5 rounded-full bg-green mr-1.5 align-middle" />
-          12 stations online
-          <br />
-          <span className="text-[10px] pl-[11px]">Queue updated 14s ago</span>
         </div>
-      </div>
     </aside>
   )
 }
