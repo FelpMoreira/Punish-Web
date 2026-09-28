@@ -5,6 +5,7 @@ export interface Tournament {
   fk_owner: number | null
   fk_winner_id: number | null
   status: string
+  tipo: 'SINGLE' | 'DOUBLE'
   criado_em: string
 }
 
@@ -77,6 +78,14 @@ export interface ResultadoRequest {
   fk_winner_id: number
   score_player1: number
   score_player2: number
+}
+
+export interface Manipulacao {
+  fk_tournament_id: number
+  fk_rival_a_id: number
+  fk_rival_b_id: number
+  rival_a: Player
+  rival_b: Player
 }
 
 export interface Ranking {
