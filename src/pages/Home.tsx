@@ -24,6 +24,7 @@ export function Home({ onNavigate }: Props) {
   const [players, setPlayers] = useState<Player[]>([])
   const [name, setName] = useState('')
   const [game, setGame] = useState('')
+  const [tipo, setTipo] = useState<'SINGLE' | 'DOUBLE'>('SINGLE')
   const [playerCounts, setPlayerCounts] = useState<Record<number, number>>({})
   const [matchCounts, setMatchCounts] = useState<Record<number, number>>({})
   const loggedUser = storage.user
@@ -55,7 +56,7 @@ export function Home({ onNavigate }: Props) {
   const create = async () => {
     if (!name.trim() || !game.trim()) return
     try {
-      const t = await api.tournaments.create(name.trim(), game.trim())
+      const t = await api.tournaments.create(name.trim(), game.trim(), tipo)
       setName('')
       setGame('')
       onNavigate('tournament-detail', t.id)
@@ -117,6 +118,26 @@ export function Home({ onNavigate }: Props) {
               <div className="flex flex-col gap-2.5">
                 <Input placeholder="Nome do torneio" value={name} onChange={(e) => setName(e.target.value)} />
                 <Input placeholder="Jogo (ex: Street Fighter 6)" value={game} onChange={(e) => setGame(e.target.value)} />
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setTipo('SINGLE')}
+                    className={`px-2.5 py-1.5 rounded-md border text-xs font-semibold transition-colors cursor-pointer ${
+                      tipo === 'SINGLE' ? 'border-purple bg-purple/10' : 'border-border bg-bg-el text-muted hover:border-purple/40'
+                    }`}
+                  >
+                    Single Elim
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setTipo('DOUBLE')}
+                    className={`px-2.5 py-1.5 rounded-md border text-xs font-semibold transition-colors cursor-pointer ${
+                      tipo === 'DOUBLE' ? 'border-purple bg-purple/10' : 'border-border bg-bg-el text-muted hover:border-purple/40'
+                    }`}
+                  >
+                    Double Elim
+                  </button>
+                </div>
                 <Button icon={Trophy} style={{ width: '100%', justifyContent: 'center' }} onClick={create} disabled={!name.trim() || !game.trim()}>
                   Criar
                 </Button>
@@ -155,6 +176,11 @@ export function Home({ onNavigate }: Props) {
                         <div className="flex items-center gap-2 mb-1">
                           <span className="text-sm font-semibold">{t.name}</span>
                           {statusBadge(t.status)}
+                          {t.tipo === 'DOUBLE' && (
+                            <span className="inline-flex items-center px-1.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide rounded-sm border border-purple/25 bg-purple/10 text-purple">
+                              Double Elim
+                            </span>
+                          )}
                         </div>
                         <div className="text-xs text-muted">{t.game}</div>
                       </div>
