@@ -92,6 +92,11 @@ export function TournamentList({ onNavigate }: Props) {
                   <div className="flex items-center gap-2.5 mb-0.5">
                     <span className="text-sm font-semibold">{t.name}</span>
                     {statusBadge(t.status)}
+                    {t.tipo === 'DOUBLE' && (
+                      <span className="inline-flex items-center px-1.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide rounded-sm border border-purple/25 bg-purple/10 text-purple">
+                        Double Elim
+                      </span>
+                    )}
                   </div>
                   <div className="text-xs text-muted">{t.game}</div>
                 </div>
