@@ -11,11 +11,12 @@ import { Settings } from './pages/Settings'
 import { Profile } from './pages/Profile'
 import { Invite } from './pages/Invite'
 import { Admin } from './pages/Admin'
+import { Manipulacao } from './pages/Manipulacao'
 import { Sidebar } from './components/layout/Sidebar'
 import { MobileNav } from './components/layout/MobileNav'
 import { api, storage } from './services/api'
 
-type Page = 'home' | 'login' | 'register' | 'dashboard' | 'tournament-list' | 'tournament-detail' | 'players' | 'create' | 'settings' | 'profile' | 'invite' | 'admin'
+type Page = 'home' | 'login' | 'register' | 'dashboard' | 'tournament-list' | 'tournament-detail' | 'players' | 'create' | 'settings' | 'profile' | 'invite' | 'admin' | 'manipulacao'
 
 function parseHash(): { page: Page; tournamentId: number | null; codigo: string | null } {
   const hash = window.location.hash.replace('#', '')
@@ -27,12 +28,16 @@ function parseHash(): { page: Page; tournamentId: number | null; codigo: string 
   if (parts[0] === 'invite' && parts[1]) {
     return { page: 'invite', tournamentId: null, codigo: parts[1] }
   }
+  if (parts[0] === 'manipulacao' && parts[1]) {
+    return { page: 'manipulacao', tournamentId: Number(parts[1]), codigo: null }
+  }
   return { page: parts[0] as Page, tournamentId: null, codigo: null }
 }
 
 function buildHash(page: Page, tournamentId?: number | string, codigo?: string): string {
   if (page === 'tournament-detail' && tournamentId) return `#/tournament-detail/${tournamentId}`
   if (page === 'invite' && codigo) return `#/invite/${codigo}`
+  if (page === 'manipulacao' && tournamentId) return `#/manipulacao/${tournamentId}`
   return `#/${page}`
 }
 
@@ -78,6 +83,18 @@ export default function App() {
   if (page === 'admin' && !isAdmin) {
     window.location.hash = '#/dashboard'
     return null
+  }
+
+  if (page === 'manipulacao' && selectedTournamentId) {
+    return (
+      <Manipulacao
+        tournamentId={selectedTournamentId}
+        onBack={() => {
+          window.location.hash = `#/tournament-detail/${selectedTournamentId}`
+          setPage('tournament-detail')
+        }}
+      />
+    )
   }
 
   return (
