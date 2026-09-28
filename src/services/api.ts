@@ -93,10 +93,11 @@ async function request<T>(path: string, options?: RequestInit, isRetry = false):
   const headers: Record<string, string> = { 'Content-Type': 'application/json' }
   const token = storage.token
   if (token) headers['Authorization'] = `Bearer ${token}`
+  if (options?.headers) Object.assign(headers, options.headers as Record<string, string>)
 
   const res = await fetch(`${API_BASE}${path}`, {
-    headers,
     ...options,
+    headers,
   })
   if (!res.ok) {
     if (res.status === 401 || res.status === 403) {
@@ -163,10 +164,10 @@ export const api = {
       return request<import('../types').Tournament[]>(`/tournaments${qs ? '?' + qs : ''}`)
     },
     get: (id: number) => request<import('../types').Tournament>(`/tournaments/${id}`),
-    create: (name: string, game: string) =>
+    create: (name: string, game: string, tipo: 'SINGLE' | 'DOUBLE' = 'SINGLE') =>
       request<import('../types').Tournament>('/tournaments', {
         method: 'POST',
-        body: JSON.stringify({ name, game }),
+        body: JSON.stringify({ name, game, tipo }),
       }),
     update: (id: number, name: string, game: string) =>
       request<import('../types').Tournament>(`/tournaments/${id}`, {
@@ -222,6 +223,19 @@ export const api = {
     rejeitarPedido: (tournamentId: number, playerId: number) =>
       request<void>(`/tournaments/${tournamentId}/requests/${playerId}/reject`, {
         method: 'POST',
+      }),
+    getManipulacao: (tournamentId: number) =>
+      request<import('../types').Manipulacao | null>(`/tournaments/${tournamentId}/manipulacao`),
+    setManipulacao: (tournamentId: number, fk_rival_a_id: number, fk_rival_b_id: number, senha: string) =>
+      request<import('../types').Manipulacao>(`/tournaments/${tournamentId}/manipulacao`, {
+        method: 'PUT',
+        headers: { 'X-Manipulacao-Senha': senha },
+        body: JSON.stringify({ fk_rival_a_id, fk_rival_b_id }),
+      }),
+    clearManipulacao: (tournamentId: number, senha: string) =>
+      request<void>(`/tournaments/${tournamentId}/manipulacao`, {
+        method: 'DELETE',
+        headers: { 'X-Manipulacao-Senha': senha },
       }),
   },
   players: {
