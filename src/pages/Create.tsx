@@ -13,13 +13,14 @@ interface Props {
 export function Create({ onNavigate }: Props) {
   const [name, setName] = useState('')
   const [game, setGame] = useState('')
+  const [tipo, setTipo] = useState<'SINGLE' | 'DOUBLE'>('SINGLE')
   const [loading, setLoading] = useState(false)
 
   const create = async () => {
     if (!name.trim() || !game.trim()) return
     setLoading(true)
     try {
-      const t = await api.tournaments.create(name.trim(), game.trim())
+      const t = await api.tournaments.create(name.trim(), game.trim(), tipo)
       onNavigate('tournament-detail', t.id)
     } catch {
       setLoading(false)
@@ -45,6 +46,31 @@ export function Create({ onNavigate }: Props) {
               <div>
                 <label className="text-[11px] uppercase tracking-wider text-soft font-semibold mb-1 block">Game</label>
                 <Input placeholder="e.g. Street Fighter 6" value={game} onChange={(e) => setGame(e.target.value)} />
+              </div>
+              <div>
+                <label className="text-[11px] uppercase tracking-wider text-soft font-semibold mb-1 block">Format</label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setTipo('SINGLE')}
+                    className={`text-left px-3 py-2 rounded-md border transition-colors cursor-pointer ${
+                      tipo === 'SINGLE' ? 'border-purple bg-purple/10' : 'border-border bg-bg-el hover:border-purple/40'
+                    }`}
+                  >
+                    <div className="text-xs font-semibold">Single Elim</div>
+                    <div className="text-[11px] text-muted mt-0.5">One loss and you're out</div>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setTipo('DOUBLE')}
+                    className={`text-left px-3 py-2 rounded-md border transition-colors cursor-pointer ${
+                      tipo === 'DOUBLE' ? 'border-purple bg-purple/10' : 'border-border bg-bg-el hover:border-purple/40'
+                    }`}
+                  >
+                    <div className="text-xs font-semibold">Double Elim</div>
+                    <div className="text-[11px] text-muted mt-0.5">Losers bracket + grand final</div>
+                  </button>
+                </div>
               </div>
               <Button
                 icon={Trophy}
