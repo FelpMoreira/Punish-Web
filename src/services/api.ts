@@ -105,9 +105,14 @@ async function request<T>(path: string, options?: RequestInit, isRetry = false):
         const newToken = await refreshToken()
         if (newToken) return request<T>(path, options, true)
       }
-      const text = await res.text()
-      throw new Error(text || `HTTP ${res.status}`)
     }
+    let body = ''
+    try {
+      body = await res.text()
+    } catch {
+      // corpo indisponível, o status já descreve o erro
+    }
+    throw new Error(body || `HTTP ${res.status}`)
   }
   if (res.status === 204) return undefined as T
   return res.json()
