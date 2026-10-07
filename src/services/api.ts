@@ -274,10 +274,10 @@ export const api = {
       request<import('../types').Match>(`/matches/${id}/start`, {
         method: 'PATCH',
       }),
-    startRound: (tournamentId: number, round: number) =>
+    startRound: (tournamentId: number, round: number, bracketType: string) =>
       request<import('../types').Match[]>(`/tournaments/${tournamentId}/matches/start-round`, {
         method: 'PATCH',
-        body: JSON.stringify({ round }),
+        body: JSON.stringify({ round, bracketType }),
       }),
     result: (id: number, data: import('../types').ResultadoRequest) =>
       request<import('../types').Match>(`/matches/${id}/result`, {
