@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, type ReactNode } from 'react'
 import { api, storage } from '../services/api'
 import { Card } from '../components/ui/Card'
 import { Badge } from '../components/ui/Badge'
@@ -13,6 +13,23 @@ import { X, Trash2, GitBranch, UserPlus, Play, RefreshCw, Copy, List, TreePine }
 interface Props {
   onNavigate: (page: string, id?: number | string) => void
   tournamentId: number
+}
+
+const BRACKET_SECTIONS = [
+  { type: 'WINNERS', label: 'Winners' },
+  { type: 'LOSERS', label: 'Losers' },
+  { type: 'GRAND_FINAL', label: 'Grand Final' },
+] as const
+
+const SECTION_COLORS: Record<string, string> = {
+  WINNERS: '#22d3ee',
+  LOSERS: '#f59e0b',
+  GRAND_FINAL: '#8b5cf6',
+}
+
+const roundLabel = (bracketType: string, round: number) => {
+  if (bracketType === 'GRAND_FINAL') return 'GF'
+  return `${bracketType === 'LOSERS' ? 'L' : 'R'}${round}`
 }
 
 export function TournamentDetail({ onNavigate, tournamentId }: Props) {
@@ -146,13 +163,22 @@ export function TournamentDetail({ onNavigate, tournamentId }: Props) {
     api.matches.start(matchId).then(load).catch(() => {})
   }
 
-  const startRound = (round: number) => {
-    api.matches.startRound(tournamentId, round).then(load).catch(() => {})
+  const startRound = (round: number, bracketType: string) => {
+    api.matches.startRound(tournamentId, round, bracketType).then(load).catch(() => {})
   }
 
-  const firstReadyRound = matches
-    .filter((m) => m.status === 'READY' && m.fk_player1_id && m.fk_player2_id && !m.fk_winner_id)
-    .sort((a, b) => a.round_number - b.round_number)[0]?.round_number
+  const readyRoundFor = (bracketType: string) =>
+    matches
+      .filter(
+        (m) =>
+          m.bracket_type === bracketType &&
+          m.status === 'READY' &&
+          m.fk_player1_id &&
+          m.fk_player2_id &&
+          !m.fk_winner_id,
+      )
+      .map((m) => m.round_number)
+      .sort((a, b) => a - b)[0]
 
   const submitResult = (matchId: number, winnerId: number) => {
     api.matches.result(matchId, { fk_winner_id: winnerId, score_player1: 0, score_player2: 0 }).then(load).catch(() => {})
@@ -198,6 +224,15 @@ export function TournamentDetail({ onNavigate, tournamentId }: Props) {
     }
     return null
   }
+
+  const matchColumns: { key: string; header: string; render: (m: Match) => ReactNode }[] = [
+    { key: 'round', header: 'Round', render: (m) => <span className="text-xs">{roundLabel(m.bracket_type, m.round_number)}</span> },
+    { key: 'p1', header: 'Player 1', render: (m) => m.fk_player1_id ? players.find(p => p.id === m.fk_player1_id)?.nickname || `#${m.fk_player1_id}` : <span className="text-muted italic text-xs">TBD</span> },
+    { key: 'vs', header: '', render: () => <span className="text-soft text-xs">vs</span> },
+    { key: 'p2', header: 'Player 2', render: (m) => m.fk_player2_id ? players.find(p => p.id === m.fk_player2_id)?.nickname || `#${m.fk_player2_id}` : <span className="text-muted italic text-xs">TBD</span> },
+    { key: 'status', header: '', render: (m) => statusLabel(m) },
+    { key: 'actions', header: '', render: (m) => renderActions(m) },
+  ]
 
   return (
     <>
@@ -336,11 +371,6 @@ export function TournamentDetail({ onNavigate, tournamentId }: Props) {
                       Bracket
                     </button>
                   </div>
-                  {viewMode === 'table' && firstReadyRound !== undefined && tournament?.status !== 'FINISHED' ? (
-                    <Button size="sm" icon={Play} onClick={() => startRound(firstReadyRound)}>
-                      Start Round {firstReadyRound}
-                    </Button>
-                  ) : undefined}
                 </div>
               }
             >
@@ -354,17 +384,39 @@ export function TournamentDetail({ onNavigate, tournamentId }: Props) {
                   />
                 ) : (
                   <div className="-mx-4 -mb-3">
-                    <Table
-                      columns={[
-                        { key: 'round', header: 'Round', render: (m: Match) => <span className="text-xs">R{m.round_number}</span> },
-                        { key: 'p1', header: 'Player 1', render: (m: Match) => m.fk_player1_id ? players.find(p => p.id === m.fk_player1_id)?.nickname || `#${m.fk_player1_id}` : <span className="text-muted italic text-xs">TBD</span> },
-                        { key: 'vs', header: '', render: () => <span className="text-soft text-xs">vs</span> },
-                        { key: 'p2', header: 'Player 2', render: (m: Match) => m.fk_player2_id ? players.find(p => p.id === m.fk_player2_id)?.nickname || `#${m.fk_player2_id}` : <span className="text-muted italic text-xs">TBD</span> },
-                        { key: 'status', header: '', render: (m: Match) => statusLabel(m) },
-                        { key: 'actions', header: '', render: renderActions },
-                      ]}
-                      data={matches.sort((a, b) => a.round_number - b.round_number || a.id - b.id)}
-                    />
+                    {BRACKET_SECTIONS.map(({ type, label }, index) => {
+                      const rows = matches
+                        .filter((m) => m.bracket_type === type)
+                        .sort((a, b) => a.round_number - b.round_number || a.match_number - b.match_number)
+                      if (rows.length === 0) return null
+
+                      const readyRound = readyRoundFor(type)
+                      return (
+                        <div key={type}>
+                          <div className={`flex items-center justify-between gap-2 px-4 pb-2 ${index === 0 ? 'pt-0' : 'pt-5'}`}>
+                            <span className="flex items-center gap-2 text-[11px] uppercase tracking-wider text-soft font-semibold">
+                              <span
+                                className="h-2 w-2 flex-shrink-0 rounded-full"
+                                style={{ background: SECTION_COLORS[type] }}
+                              />
+                              {label}
+                            </span>
+                            {readyRound !== undefined && tournament?.status !== 'FINISHED' ? (
+                              <Button
+                                size="sm"
+                                icon={Play}
+                                onClick={() => startRound(readyRound, type)}
+                              >
+                                {type === 'GRAND_FINAL'
+                                  ? 'Start Grand Final'
+                                  : `Start ${label} ${roundLabel(type, readyRound)}`}
+                              </Button>
+                            ) : null}
+                          </div>
+                          <Table columns={matchColumns} data={rows} />
+                        </div>
+                      )
+                    })}
                   </div>
                 )
               ) : (
